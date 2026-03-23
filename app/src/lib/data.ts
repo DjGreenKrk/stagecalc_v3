@@ -18,11 +18,11 @@ export const allDevices: Device[] = [
 ];
 
 export const allPowerConnectors: PowerConnector[] = [
-  { id: 'conn-1', locationId: 'loc-1', type: '16A', phases: 1, maxCurrentA: 16 },
-  { id: 'conn-2', locationId: 'loc-1', type: '32A', phases: 3, maxCurrentA: 32 },
-  { id: 'conn-3', locationId: 'loc-1', type: '63A', phases: 3, maxCurrentA: 63 },
-  { id: 'conn-4', locationId: 'loc-2', type: '16A', phases: 1, maxCurrentA: 16 },
-  { id: 'conn-5', locationId: 'loc-2', type: '16A', phases: 1, maxCurrentA: 16 },
+  { id: 'conn-1', locationId: 'loc-1', type: '16A Uni-Schuko', phases: 1, maxCurrentA: 16 },
+  { id: 'conn-2', locationId: 'loc-1', type: '32A CEE 5P', phases: 3, maxCurrentA: 32 },
+  { id: 'conn-3', locationId: 'loc-1', type: '63A CEE 5P', phases: 3, maxCurrentA: 63 },
+  { id: 'conn-4', locationId: 'loc-2', type: '16A Uni-Schuko', phases: 1, maxCurrentA: 16 },
+  { id: 'conn-5', locationId: 'loc-2', type: '16A Uni-Schuko', phases: 1, maxCurrentA: 16 },
 ];
 
 export const allEvents: Event[] = [

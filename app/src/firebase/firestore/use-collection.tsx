@@ -1,124 +1,82 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import {
-  Query,
-  onSnapshot,
-  DocumentData,
-  FirestoreError,
-  QuerySnapshot,
-  CollectionReference,
-} from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { pb } from '@/lib/pocketbase';
+import { RecordModel } from 'pocketbase';
 
-/** Utility type to add an 'id' field to a given type T. */
+/** Utility type to add an 'cid' (id) field to a given type T for consistency if needed, 
+ * but PocketBase already has 'id'. We'll use WithId for compatibility. */
 export type WithId<T> = T & { id: string };
 
-/**
- * Interface for the return value of the useCollection hook.
- * @template T Type of the document data.
- */
 export interface UseCollectionResult<T> {
-  data: WithId<T>[] | null; // Document data with ID, or null.
-  isLoading: boolean;       // True if loading.
-  error: FirestoreError | Error | null; // Error object, or null.
+  data: WithId<T>[] | null;
+  isLoading: boolean;
+  error: Error | null;
   setData: React.Dispatch<React.SetStateAction<WithId<T>[] | null>>;
 }
 
-/* Internal implementation of Query:
-  https://github.com/firebase/firebase-js-sdk/blob/c5f08a9bc5da0d2b0207802c972d53724ccef055/packages/firestore/src/lite-api/reference.ts#L143
-*/
-export interface InternalQuery extends Query<DocumentData> {
-  _query: {
-    path: {
-      canonicalString(): string;
-      toString(): string;
-    }
-  }
-}
-
 /**
- * React hook to subscribe to a Firestore collection or query in real-time.
- * Handles nullable references/queries.
+ * React hook to subscribe to a PocketBase collection in real-time.
  * 
- *
- * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
- * use useMemo to memoize it per React guidence.  Also make sure that it's dependencies are stable
- * references
- *  
- * @template T Optional type for document data. Defaults to any.
- * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} targetRefOrQuery -
- * The Firestore CollectionReference or Query. Waits if null/undefined.
- * @returns {UseCollectionResult<T>} Object with data, isLoading, error.
+ * @template T Type for document data.
+ * @param {string | null | undefined} collectionName - The name of the PocketBase collection.
+ * @param {object} options - PocketBase list options (filters, sort, etc.)
  */
 export function useCollection<T = any>(
-    memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined,
+  collectionName: string | null | undefined,
+  options: any = {}
 ): UseCollectionResult<T> {
   type ResultItemType = WithId<T>;
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<FirestoreError | Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!memoizedTargetRefOrQuery) {
+    if (!collectionName) {
       setData(null);
       setIsLoading(false);
       setError(null);
       return;
     }
 
-    if (!isLoading) setIsLoading(true);
+    setIsLoading(true);
     setError(null);
 
-    const unsubscribe = onSnapshot(
-      memoizedTargetRefOrQuery,
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        const results: ResultItemType[] = [];
-        for (const doc of snapshot.docs) {
-          results.push({ ...(doc.data() as T), id: doc.id });
-        }
-        
+    // Initial fetch
+    pb.collection(collectionName).getFullList<RecordModel>(options)
+      .then((records) => {
         startTransition(() => {
-          setData(results);
+          setData(records as unknown as ResultItemType[]);
         });
-
-        setError(null);
         setIsLoading(false);
-      },
-      (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
-        const path: string =
-          memoizedTargetRefOrQuery.type === 'collection'
-            ? (memoizedTargetRefOrQuery as CollectionReference).path
-            : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
+      })
+      .catch((err) => {
+        console.error(`useCollection error (${collectionName}):`, err);
+        setError(err);
+        setIsLoading(false);
+      });
 
-        const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path,
-        })
-
-        startTransition(() => {
-            setError(contextualError);
-            setData(null);
+    // Real-time subscription
+    const unsubscribePromise = pb.collection(collectionName).subscribe('*', (e) => {
+      // Refresh the whole list on any change for simplicity, 
+      // or we could optimistically update the state.
+      // For now, let's just refetch to ensure correctness with filters/sort.
+      pb.collection(collectionName).getFullList<RecordModel>(options)
+        .then((records) => {
+          startTransition(() => {
+            setData(records as unknown as ResultItemType[]);
+          });
         });
-        
-        setIsLoading(false);
+    }, options);
 
-        // trigger global error propagation
-        errorEmitter.emit('permission-error', contextualError);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
-  
-  if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
-  }
+    return () => {
+      unsubscribePromise.then(unsubscribe => unsubscribe());
+    };
+  }, [collectionName, JSON.stringify(options)]);
 
   return { data, isLoading: isLoading || isPending, error, setData };
 }
+

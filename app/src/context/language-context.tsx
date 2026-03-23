@@ -13,7 +13,7 @@ type Translations = typeof plTranslations;
 interface LanguageContextType {
   language: Language;
   setLanguage: (language: Language) => void;
-  t: (key: string, options?: { [key: string]: string | number }) => string;
+  t: (key: string, optionsOrFallback?: { [key: string]: string | number } | string) => string;
   getLocale: () => Locale;
 }
 
@@ -36,15 +36,15 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('language', lang);
     setLanguageState(lang);
   };
-  
+
   const getLocale = () => {
     return locales[language] || enUS;
   }
 
-  const t = (key: string, options?: { [key: string]: string | number }): string => {
+  const t = (key: string, optionsOrFallback?: { [key: string]: string | number } | string): string => {
     const keys = key.split('.');
     let result: any = translations[language];
-    
+
     for (const k of keys) {
       result = result?.[k];
       if (result === undefined) {
@@ -53,19 +53,21 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         for (const fk of keys) {
           fallbackResult = fallbackResult?.[fk];
         }
-        if (fallbackResult === undefined) return key;
+        if (fallbackResult === undefined) {
+          return typeof optionsOrFallback === 'string' ? optionsOrFallback : key;
+        }
         result = fallbackResult;
         break;
       }
     }
 
-    if (typeof result === 'string' && options) {
-      return Object.entries(options).reduce((acc, [key, value]) => {
+    if (typeof result === 'string' && optionsOrFallback && typeof optionsOrFallback !== 'string') {
+      return Object.entries(optionsOrFallback).reduce((acc, [key, value]) => {
         return acc.replace(`{{${key}}}`, String(value));
       }, result);
     }
 
-    return result || key;
+    return result || (typeof optionsOrFallback === 'string' ? optionsOrFallback : key);
   };
 
 

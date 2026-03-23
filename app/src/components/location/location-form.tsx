@@ -60,7 +60,7 @@ const powerConnectorSchema = z.object({
     'Powerlock 200A',
     'Powerlock 400A',
   ]),
-  phases: z.coerce.number().min(1).max(3),
+  phases: z.union([z.literal(1), z.literal(3)]),
   maxCurrentA: z.coerce.number().min(1),
   notes: z.string().optional(),
 });
@@ -94,6 +94,7 @@ type LocationFormProps = {
   onOpenChange: (open: boolean) => void;
   location?: Location;
   onSave: (location: Omit<Location, 'id'>, id?: string) => void;
+  onDeleteRequest?: () => void;
 };
 
 type View = 'form' | 'confirmClose' | 'confirmDeleteGroup';
@@ -113,7 +114,7 @@ export function LocationForm({
   const [itemToDelete, setItemToDelete] = useState<{ type: 'group'; id: string } | null>(null);
 
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
-  
+
   const form = useForm<LocationFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -139,7 +140,7 @@ export function LocationForm({
     control: control,
     name: 'documents',
   });
-  
+
   const { fields: contactFields, append: appendContact, remove: removeContact } = useFieldArray({
     control: control,
     name: 'contacts',
@@ -154,9 +155,9 @@ export function LocationForm({
       const phases = connector.phases;
       let powerPerConnector = 0;
       if (phases === 1) {
-          powerPerConnector = 230 * current;
+        powerPerConnector = 230 * current;
       } else {
-          powerPerConnector = 400 * current * Math.sqrt(3);
+        powerPerConnector = 400 * current * Math.sqrt(3);
       }
       return total + powerPerConnector;
     }, 0);
@@ -166,7 +167,7 @@ export function LocationForm({
     const allConnectors = watchedGroups?.flatMap(g => g.connectors || []);
     return calculatePower(allConnectors);
   }, [watchedGroups]);
-  
+
   const handleAddGroup = () => {
     const newGroupId = crypto.randomUUID();
     appendGroup({
@@ -177,7 +178,7 @@ export function LocationForm({
     setOpenAccordionItems(prev => [...prev, newGroupId]);
   }
 
- const handleAddConnector = (groupIndex: number) => {
+  const handleAddConnector = (groupIndex: number) => {
     const group = watchedGroups?.[groupIndex];
     if (!group) return;
 
@@ -185,21 +186,21 @@ export function LocationForm({
     const config = connectorTypeConfig[newType];
 
     const newConnectors = [...(group.connectors || []), {
-        id: crypto.randomUUID(),
-        type: newType as PowerConnector['type'],
-        phases: config.phases as 1 | 3,
-        maxCurrentA: config.maxCurrentA,
-        notes: ''
+      id: crypto.randomUUID(),
+      type: newType as PowerConnector['type'],
+      phases: config.phases as 1 | 3,
+      maxCurrentA: config.maxCurrentA,
+      notes: ''
     }];
     updateGroup(groupIndex, { ...group, connectors: newConnectors });
   }
 
   const handleRemoveConnector = (groupIndex: number, connectorIndex: number) => {
-     const group = watchedGroups?.[groupIndex];
-     if (!group) return;
-     const newConnectors = [...(group.connectors || [])];
-     newConnectors.splice(connectorIndex, 1);
-     updateGroup(groupIndex, { ...group, connectors: newConnectors });
+    const group = watchedGroups?.[groupIndex];
+    if (!group) return;
+    const newConnectors = [...(group.connectors || [])];
+    newConnectors.splice(connectorIndex, 1);
+    updateGroup(groupIndex, { ...group, connectors: newConnectors });
   }
 
   const handleDeleteGroupRequest = (groupId: string) => {
@@ -217,7 +218,7 @@ export function LocationForm({
     setView('form');
     setItemToDelete(null);
   }
-  
+
   const handleAddDocument = () => {
     appendDocument({ id: crypto.randomUUID(), name: '', url: '' });
   };
@@ -225,7 +226,7 @@ export function LocationForm({
   const handleAddContact = () => {
     appendContact({ id: crypto.randomUUID(), name: '', phone: '', email: '', notes: '' });
   };
-  
+
   const handleAttemptClose = () => {
     if (isDirty) {
       setView('confirmClose');
@@ -247,7 +248,7 @@ export function LocationForm({
           groups = [{
             id: crypto.randomUUID(),
             name: 'Domyślne przyłącza',
-            connectors: location.powerConnectors.map(c => ({...c, id: c.id || crypto.randomUUID(), type: c.type || '16A Uni-Schuko'}))
+            connectors: location.powerConnectors.map(c => ({ ...c, id: c.id || crypto.randomUUID(), type: c.type || '16A Uni-Schuko' }))
           }];
         }
 
@@ -258,7 +259,7 @@ export function LocationForm({
           powerConnectorGroups: groups.map(g => ({
             ...g,
             id: g.id || crypto.randomUUID(),
-            connectors: g.connectors?.map(c => ({...c, id: c.id || crypto.randomUUID()})) || []
+            connectors: g.connectors?.map(c => ({ ...c, id: c.id || crypto.randomUUID() })) || []
           })),
           documents: location.documents?.map(doc => ({ ...doc, id: doc.id || crypto.randomUUID() })) || [],
           contacts: location.contacts?.map(c => ({ ...c, id: c.id || crypto.randomUUID() })) || [],
@@ -304,7 +305,7 @@ export function LocationForm({
     };
     onSave(dataToSave, values.id);
   };
-  
+
   const renderContent = () => {
     switch (view) {
       case 'confirmClose':
@@ -321,9 +322,9 @@ export function LocationForm({
           </>
         );
       case 'confirmDeleteGroup':
-         const groupName = watchedGroups?.find(g => g.id === itemToDelete?.id)?.name || 'tę grupę';
+        const groupName = watchedGroups?.find(g => g.id === itemToDelete?.id)?.name || 'tę grupę';
         return (
-           <>
+          <>
             <DialogHeader>
               <DialogTitle>{t('common.are_you_sure')}</DialogTitle>
             </DialogHeader>
@@ -343,128 +344,128 @@ export function LocationForm({
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col min-h-0">
-                 <div className="overflow-y-auto pr-6 pl-1 py-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="overflow-y-auto pr-6 pl-1 py-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col space-y-4">
-                        <FormField control={control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('locations.table.name')}</FormLabel><FormControl><Input placeholder={t('locations.name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={control} name="address" render={({ field }) => (<FormItem><FormLabel>{t('locations.table.address')}</FormLabel><FormControl><Input placeholder={t('locations.address_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={control} name="capacity" render={({ field }) => (<FormItem><FormLabel>{t('locations.capacity_people')}</FormLabel><FormControl><Input type="number" placeholder="1000" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={control} name="notes" render={({ field }) => (<FormItem className="flex flex-col flex-1"><FormLabel>{t('common.notes')}</FormLabel><FormControl><Textarea placeholder={t('locations.notes_placeholder')} {...field} className="h-full" /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('locations.table.name')}</FormLabel><FormControl><Input placeholder={t('locations.name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={control} name="address" render={({ field }) => (<FormItem><FormLabel>{t('locations.table.address')}</FormLabel><FormControl><Input placeholder={t('locations.address_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={control} name="capacity" render={({ field }) => (<FormItem><FormLabel>{t('locations.capacity_people')}</FormLabel><FormControl><Input type="number" placeholder="1000" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={control} name="notes" render={({ field }) => (<FormItem className="flex flex-col flex-1"><FormLabel>{t('common.notes')}</FormLabel><FormControl><Textarea placeholder={t('locations.notes_placeholder')} {...field} className="h-full" /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                     <div className="space-y-4">
-                        <Tabs defaultValue="power">
+                      <Tabs defaultValue="power">
                         <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="power"><Zap className="mr-2 h-4 w-4" /> Przyłącza</TabsTrigger>
-                            <TabsTrigger value="contacts"><User className="mr-2 h-4 w-4" /> Kontakty</TabsTrigger>
-                            <TabsTrigger value="docs"><LinkIcon className="mr-2 h-4 w-4" /> Pliki</TabsTrigger>
+                          <TabsTrigger value="power"><Zap className="mr-2 h-4 w-4" /> Przyłącza</TabsTrigger>
+                          <TabsTrigger value="contacts"><User className="mr-2 h-4 w-4" /> Kontakty</TabsTrigger>
+                          <TabsTrigger value="docs"><LinkIcon className="mr-2 h-4 w-4" /> Pliki</TabsTrigger>
                         </TabsList>
                         <TabsContent value="power" className="space-y-4">
-                            <Accordion type="multiple" value={openAccordionItems} onValueChange={setOpenAccordionItems} className="w-full">
-                               {groupFields.map((groupField, groupIndex) => {
-                                const group = watchedGroups?.[groupIndex];
-                                if (!group) return null;
-                                const groupPower = calculatePower(group?.connectors);
-                                return (
+                          <Accordion type="multiple" value={openAccordionItems} onValueChange={setOpenAccordionItems} className="w-full">
+                            {groupFields.map((groupField, groupIndex) => {
+                              const group = watchedGroups?.[groupIndex];
+                              if (!group) return null;
+                              const groupPower = calculatePower(group?.connectors);
+                              return (
                                 <AccordionItem value={group.id} key={group.id}>
-                                    <div className='flex items-center'>
-                                        <AccordionTrigger>
-                                          <div className="flex items-center gap-2">
-                                            <FormField control={control} name={`powerConnectorGroups.${groupIndex}.name`} render={({ field }) => (<Input {...field} onClick={(e) => e.stopPropagation()} className="text-md font-semibold border-none shadow-none focus-visible:ring-0 p-0 h-auto bg-transparent" />)} />
-                                            <span className="text-sm text-muted-foreground font-normal">({(groupPower / 1000).toFixed(1)} kW)</span>
-                                          </div>
-                                        </AccordionTrigger>
-                                         <Button type="button" variant='ghost' size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleDeleteGroupRequest(groupField.id)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                  <div className='flex items-center'>
+                                    <AccordionTrigger>
+                                      <div className="flex items-center gap-2">
+                                        <FormField control={control} name={`powerConnectorGroups.${groupIndex}.name`} render={({ field }) => (<Input {...field} onClick={(e) => e.stopPropagation()} className="text-md font-semibold border-none shadow-none focus-visible:ring-0 p-0 h-auto bg-transparent" />)} />
+                                        <span className="text-sm text-muted-foreground font-normal">({(groupPower / 1000).toFixed(1)} kW)</span>
+                                      </div>
+                                    </AccordionTrigger>
+                                    <Button type="button" variant='ghost' size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleDeleteGroupRequest(groupField.id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  <AccordionContent className='pl-2 space-y-2'>
+                                    <div className="max-h-60 overflow-y-auto pr-2">
+                                      <Table>
+                                        <TableHeader><TableRow><TableHead>Typ</TableHead><TableHead>Notatki</TableHead><TableHead className="w-[50px]"><span className="sr-only">Akcje</span></TableHead></TableRow></TableHeader>
+                                        <TableBody>
+                                          {(group?.connectors || []).map((connector, connectorIndex) => (
+                                            <TableRow key={connector.id}>
+                                              <TableCell className="p-1">
+                                                <FormField control={control} name={`powerConnectorGroups.${groupIndex}.connectors.${connectorIndex}.type`} render={({ field: selectField }) => (<FormItem><Select onValueChange={(value) => { selectField.onChange(value); const config = connectorTypeConfig[value as keyof typeof connectorTypeConfig]; if (config) { form.setValue(`powerConnectorGroups.${groupIndex}.connectors.${connectorIndex}.maxCurrentA`, config.maxCurrentA); form.setValue(`powerConnectorGroups.${groupIndex}.connectors.${connectorIndex}.phases`, config.phases); } }} value={selectField.value}><FormControl><SelectTrigger className="h-9"><SelectValue placeholder={t('locations.type_placeholder')} /></SelectTrigger></FormControl><SelectContent>{ConnectorTypes.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                              </TableCell>
+                                              <TableCell className="p-1"><FormField control={control} name={`powerConnectorGroups.${groupIndex}.connectors.${connectorIndex}.notes`} render={({ field }) => (<FormItem><FormControl><Input className="h-9" placeholder={t('locations.connector_notes_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} /></TableCell>
+                                              <TableCell className="p-1"><Button type="button" variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => handleRemoveConnector(groupIndex, connectorIndex)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button></TableCell>
+                                            </TableRow>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
                                     </div>
-                                    <AccordionContent className='pl-2 space-y-2'>
-                                        <div className="max-h-60 overflow-y-auto pr-2">
-                                            <Table>
-                                              <TableHeader><TableRow><TableHead>Typ</TableHead><TableHead>Notatki</TableHead><TableHead className="w-[50px]"><span className="sr-only">Akcje</span></TableHead></TableRow></TableHeader>
-                                              <TableBody>
-                                              {(group?.connectors || []).map((connector, connectorIndex) => (
-                                                  <TableRow key={connector.id}>
-                                                    <TableCell className="p-1">
-                                                      <FormField control={control} name={`powerConnectorGroups.${groupIndex}.connectors.${connectorIndex}.type`} render={({ field: selectField }) => (<FormItem><Select onValueChange={(value) => { selectField.onChange(value); const config = connectorTypeConfig[value as keyof typeof connectorTypeConfig]; if (config) { form.setValue(`powerConnectorGroups.${groupIndex}.connectors.${connectorIndex}.maxCurrentA`, config.maxCurrentA); form.setValue(`powerConnectorGroups.${groupIndex}.connectors.${connectorIndex}.phases`, config.phases); } }} value={selectField.value}><FormControl><SelectTrigger className="h-9"><SelectValue placeholder={t('locations.type_placeholder')} /></SelectTrigger></FormControl><SelectContent>{ConnectorTypes.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                                    </TableCell>
-                                                    <TableCell className="p-1"><FormField control={control} name={`powerConnectorGroups.${groupIndex}.connectors.${connectorIndex}.notes`} render={({ field }) => (<FormItem><FormControl><Input className="h-9" placeholder={t('locations.connector_notes_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} /></TableCell>
-                                                    <TableCell className="p-1"><Button type="button" variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => handleRemoveConnector(groupIndex, connectorIndex)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button></TableCell>
-                                                  </TableRow>
-                                              ))}
-                                              </TableBody>
-                                            </Table>
-                                        </div>
-                                        <Button type="button" variant="outline" size="sm" onClick={() => handleAddConnector(groupIndex)}><PlusCircle className="mr-2 h-4 w-4" /> {t('common.add')} złącze</Button>
-                                    </AccordionContent>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => handleAddConnector(groupIndex)}><PlusCircle className="mr-2 h-4 w-4" /> {t('common.add')} złącze</Button>
+                                  </AccordionContent>
                                 </AccordionItem>
-                                );
-                                })}
-                            </Accordion>
-                            <Button type="button" variant="outline" size="sm" onClick={handleAddGroup} className="w-full"><PlusCircle className="mr-2 h-4 w-4" /> Dodaj grupę (np. rozdzielnię)</Button>
-                            <SummaryCard title={t('locations.total_available_power')} value={`${(totalPowerCapacity / 1000).toFixed(2)} kW`} icon={Zap}/>
+                              );
+                            })}
+                          </Accordion>
+                          <Button type="button" variant="outline" size="sm" onClick={handleAddGroup} className="w-full"><PlusCircle className="mr-2 h-4 w-4" /> Dodaj grupę (np. rozdzielnię)</Button>
+                          <SummaryCard title={t('locations.total_available_power')} value={`${(totalPowerCapacity / 1000).toFixed(2)} kW`} icon={Zap} />
                         </TabsContent>
                         <TabsContent value="contacts" className="space-y-4">
-                            <div className="flex items-center justify-between"><h3 className="text-lg font-medium">Kontakty</h3><Button type="button" variant="outline" size="sm" onClick={handleAddContact}><PlusCircle className="mr-2 h-4 w-4" /> {t('common.add')}</Button></div>
-                            <div className="max-h-96 overflow-y-auto space-y-3 pr-2">
-                                {contactFields.map((field, index) => (
-                                <div key={field.id} className="p-4 border rounded-lg space-y-3 relative">
-                                    <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => removeContact(index)}><X className="h-4 w-4 text-muted-foreground" /></Button>
-                                    <FormField control={control} name={`contacts.${index}.name`} render={({ field }) => (<FormItem><FormLabel>Imię i nazwisko</FormLabel><FormControl><Input placeholder="Jan Kowalski" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={control} name={`contacts.${index}.notes`} render={({ field }) => (<FormItem><FormLabel>Rola / Notatki</FormLabel><FormControl><Input placeholder="np. Technik sceny, Kierownik" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <FormField control={control} name={`contacts.${index}.phone`} render={({ field }) => (<FormItem><FormLabel>Telefon</FormLabel><FormControl><Input placeholder="+48..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                      <FormField control={control} name={`contacts.${index}.email`} render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="email@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    </div>
+                          <div className="flex items-center justify-between"><h3 className="text-lg font-medium">Kontakty</h3><Button type="button" variant="outline" size="sm" onClick={handleAddContact}><PlusCircle className="mr-2 h-4 w-4" /> {t('common.add')}</Button></div>
+                          <div className="max-h-96 overflow-y-auto space-y-3 pr-2">
+                            {contactFields.map((field, index) => (
+                              <div key={field.id} className="p-4 border rounded-lg space-y-3 relative">
+                                <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => removeContact(index)}><X className="h-4 w-4 text-muted-foreground" /></Button>
+                                <FormField control={control} name={`contacts.${index}.name`} render={({ field }) => (<FormItem><FormLabel>Imię i nazwisko</FormLabel><FormControl><Input placeholder="Jan Kowalski" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={control} name={`contacts.${index}.notes`} render={({ field }) => (<FormItem><FormLabel>Rola / Notatki</FormLabel><FormControl><Input placeholder="np. Technik sceny, Kierownik" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <div className="grid grid-cols-2 gap-4">
+                                  <FormField control={control} name={`contacts.${index}.phone`} render={({ field }) => (<FormItem><FormLabel>Telefon</FormLabel><FormControl><Input placeholder="+48..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                  <FormField control={control} name={`contacts.${index}.email`} render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="email@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
-                                ))}
-                                {contactFields.length === 0 && <p className='text-sm text-center text-muted-foreground py-8'>Brak dodanych kontaktów.</p>}
-                            </div>
+                              </div>
+                            ))}
+                            {contactFields.length === 0 && <p className='text-sm text-center text-muted-foreground py-8'>Brak dodanych kontaktów.</p>}
+                          </div>
                         </TabsContent>
                         <TabsContent value="docs" className="space-y-4">
-                            <div className="flex items-center justify-between"><h3 className="text-lg font-medium">Załączone pliki</h3><Button type="button" variant="outline" size="sm" onClick={handleAddDocument}><PlusCircle className="mr-2 h-4 w-4" /> {t('common.add')}</Button></div>
-                            <div className="max-h-96 overflow-y-auto space-y-3 pr-2">
-                                {documentFields.map((field, index) => (
-                                <div key={field.id} className="flex items-end gap-2">
-                                    <div className="grid grid-cols-1 gap-2 flex-1">
-                                        <FormField
-                                            control={form.control}
-                                            name={`documents.${index}.name`}
-                                            render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-xs">Nazwa pliku</FormLabel>
-                                                <FormControl>
-                                                <Input placeholder="np. Plan techniczny" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name={`documents.${index}.url`}
-                                            render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-xs">Link do pliku</FormLabel>
-                                                <FormControl>
-                                                <Input placeholder="https://..." {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => removeDocument(index)}>
-                                        <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                     </Button>
-                                  </div>
-                                ))}
-                                {documentFields.length === 0 && <p className='text-sm text-center text-muted-foreground py-8'>Brak załączonych plików.</p>}
-                            </div>
+                          <div className="flex items-center justify-between"><h3 className="text-lg font-medium">Załączone pliki</h3><Button type="button" variant="outline" size="sm" onClick={handleAddDocument}><PlusCircle className="mr-2 h-4 w-4" /> {t('common.add')}</Button></div>
+                          <div className="max-h-96 overflow-y-auto space-y-3 pr-2">
+                            {documentFields.map((field, index) => (
+                              <div key={field.id} className="flex items-end gap-2">
+                                <div className="grid grid-cols-1 gap-2 flex-1">
+                                  <FormField
+                                    control={form.control}
+                                    name={`documents.${index}.name`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-xs">Nazwa pliku</FormLabel>
+                                        <FormControl>
+                                          <Input placeholder="np. Plan techniczny" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name={`documents.${index}.url`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-xs">Link do pliku</FormLabel>
+                                        <FormControl>
+                                          <Input placeholder="https://..." {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                                <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => removeDocument(index)}>
+                                  <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </div>
+                            ))}
+                            {documentFields.length === 0 && <p className='text-sm text-center text-muted-foreground py-8'>Brak załączonych plików.</p>}
+                          </div>
                         </TabsContent>
-                        </Tabs>
+                      </Tabs>
                     </div>
-                    </div>
-                 </div>
+                  </div>
+                </div>
                 <DialogFooter className="pt-4 border-t">
                   <Button type="button" variant="secondary" onClick={handleAttemptClose}>{t('common.cancel')}</Button>
                   <Button type="submit">{t('common.save_changes')}</Button>
@@ -477,31 +478,31 @@ export function LocationForm({
   };
 
   return (
-      <Dialog open={open} onOpenChange={(val) => {if (!val) handleAttemptClose()}}>
-        <DialogContent
-          hideClose
-          className="sm:max-w-4xl max-h-[90vh] flex flex-col"
-          onPointerDownOutside={(e) => {
-            if(isDirty) e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            if(isDirty) e.preventDefault();
-            handleAttemptClose();
-          }}
-        >
-             <div className="absolute top-4 right-4 flex items-center gap-2">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleAttemptClose}
-                >
-                    <X className="h-5 w-5" />
-                    <span className="sr-only">Zamknij</span>
-                </Button>
-            </div>
-            {renderContent()}
-        </DialogContent>
-      </Dialog>
+    <Dialog open={open} onOpenChange={(val) => { if (!val) handleAttemptClose() }}>
+      <DialogContent
+        hideClose
+        className="sm:max-w-4xl max-h-[90vh] flex flex-col"
+        onPointerDownOutside={(e) => {
+          if (isDirty) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (isDirty) e.preventDefault();
+          handleAttemptClose();
+        }}
+      >
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleAttemptClose}
+          >
+            <X className="h-5 w-5" />
+            <span className="sr-only">Zamknij</span>
+          </Button>
+        </div>
+        {renderContent()}
+      </DialogContent>
+    </Dialog>
   );
 }

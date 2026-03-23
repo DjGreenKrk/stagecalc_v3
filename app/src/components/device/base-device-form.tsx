@@ -43,7 +43,7 @@ type BaseDeviceFormProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   device?: Device;
-  onSave: (device: Omit<Device, 'category'> & { id?: string }) => void;
+  onSave: (device: Omit<Device, 'category' | 'id'> & { id?: string }) => void;
   category: DeviceCategory;
 };
 
@@ -119,7 +119,7 @@ export function BaseDeviceForm({
       ...values,
       id: device?.id,
     };
-    onSave(dataToSave);
+    onSave(dataToSave as any);
   };
 
   return (
@@ -133,35 +133,35 @@ export function BaseDeviceForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-                <FormField
+              <FormField
                 control={control}
                 name="name"
                 render={({ field }) => (
-                    <FormItem>
+                  <FormItem>
                     <FormLabel>{t('devices.table.name')}</FormLabel>
                     <FormControl>
-                        <Input placeholder={t('devices.name_placeholder')} {...field} />
+                      <Input placeholder={t('devices.name_placeholder')} {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
-                <FormField
+              />
+              <FormField
                 control={control}
                 name="manufacturer"
                 render={({ field }) => (
-                    <FormItem>
+                  <FormItem>
                     <FormLabel>{t('devices.table.manufacturer')}</FormLabel>
                     <FormControl>
-                        <Input placeholder={t('devices.manufacturer_placeholder')} {...field} />
+                      <Input placeholder={t('devices.manufacturer_placeholder')} {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
+              />
             </div>
 
-             {category.subcategories && category.subcategories.length > 0 && (
+            {category.subcategories && category.subcategories.length > 0 && (
               <FormField
                 control={control}
                 name="subcategory"
@@ -185,7 +185,7 @@ export function BaseDeviceForm({
                 )}
               />
             )}
-            
+
             <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={control}

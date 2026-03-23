@@ -81,7 +81,7 @@ type MultimediaDeviceFormProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   device?: Omit<Device, 'id'> & { id?: string };
-  onSave: (device: Omit<Device, 'id' | 'category'> & { id?: string }) => void;
+  onSave: (device: Omit<Device, 'category' | 'id'> & { id?: string }) => void;
   category: DeviceCategory;
 };
 
@@ -141,7 +141,7 @@ export function MultimediaDeviceForm({
         distributionType: undefined, inputsOutputs: '', supportedResolutions: '', latency: '',
         maxModulesPerCircuit: undefined, maxModulesPerSignalPath: undefined,
       };
-      
+
       if (device) {
         reset({ ...defaultValues, ...device });
       } else {
@@ -154,32 +154,32 @@ export function MultimediaDeviceForm({
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const sanitizedValues = JSON.parse(JSON.stringify(values));
     const dataToSave = { ...sanitizedValues, id: device?.id };
-    onSave(dataToSave);
+    onSave(dataToSave as any);
   };
-  
+
   const renderProjectorFields = () => (
     <>
       <Separator className="my-4" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <FormField control={control} name="technology" render={({ field }) => (<FormItem><FormLabel>Technologia</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="DLP">DLP</SelectItem><SelectItem value="LCD">LCD</SelectItem><SelectItem value="LCoS">LCoS</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-        <FormField control={control} name="brightness" render={({ field }) => (<FormItem><FormLabel>Jasność (ANSI lm)</FormLabel><FormControl><Input type="number" placeholder="5000" {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={control} name="brightness" render={({ field }) => (<FormItem><FormLabel>Jasność (ANSI lm)</FormLabel><FormControl><Input type="number" placeholder="5000" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={control} name="nativeResolution" render={({ field }) => (<FormItem><FormLabel>Rozdzielczość natywna</FormLabel><FormControl><Input placeholder="1920x1080" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
       </div>
       <FormField control={control} name="throwRatio" render={({ field }) => (<FormItem><FormLabel>Współczynnik rzutu (throw ratio)</FormLabel><FormControl><Input placeholder="np. 1.2-1.8" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={control} name="signalInputs" render={() => (
         <FormItem>
-            <FormLabel>Wejścia sygnałowe</FormLabel>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <FormLabel>Wejścia sygnałowe</FormLabel>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {signalInputOptions.map((item) => (
-                <FormField key={item} control={control} name="signalInputs" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter((value) => value !== item))}} /></FormControl><FormLabel className="font-normal">{item}</FormLabel></FormItem>)} />
+              <FormField key={item} control={control} name="signalInputs" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { return checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter((value) => value !== item)) }} /></FormControl><FormLabel className="font-normal">{item}</FormLabel></FormItem>)} />
             ))}
-            </div><FormMessage />
+          </div><FormMessage />
         </FormItem>
-        )}
+      )}
       />
       <div className="flex space-x-4">
-        <FormField control={control} name="lensShift" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm flex-1"><div className="space-y-0.5"><FormLabel>Lens Shift</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
-        <FormField control={control} name="interchangeableLenses" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm flex-1"><div className="space-y-0.5"><FormLabel>Wymienne obiektywy</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
+        <FormField control={control} name="lensShift" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm flex-1"><div className="space-y-0.5"><FormLabel>Lens Shift</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)} />
+        <FormField control={control} name="interchangeableLenses" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm flex-1"><div className="space-y-0.5"><FormLabel>Wymienne obiektywy</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)} />
       </div>
     </>
   );
@@ -193,7 +193,7 @@ export function MultimediaDeviceForm({
       </div>
       <FormField control={control} name="screenSize" render={({ field }) => (<FormItem><FormLabel>Przekątna / wymiary [m]</FormLabel><FormControl><Input placeholder='200" lub 4x3m' {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField control={control} name="screenGain" render={({ field }) => (<FormItem><FormLabel>Gain</FormLabel><FormControl><Input type="number" step="0.1" placeholder="1.0" {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={control} name="screenGain" render={({ field }) => (<FormItem><FormLabel>Gain</FormLabel><FormControl><Input type="number" step="0.1" placeholder="1.0" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={control} name="screenProjection" render={({ field }) => (<FormItem><FormLabel>Projekcja</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="front">Przednia (front)</SelectItem><SelectItem value="rear">Tylna (rear)</SelectItem><SelectItem value="dual">Obustronna</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
       </div>
     </>
@@ -201,29 +201,29 @@ export function MultimediaDeviceForm({
 
   const renderTvFields = () => (
     <>
-        <Separator className="my-4" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField control={control} name="nativeResolution" render={({ field }) => (<FormItem><FormLabel>Rozdzielczość</FormLabel><FormControl><Input placeholder="np. 3840x2160" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={control} name="brightness" render={({ field }) => (<FormItem><FormLabel>Jasność (nity)</FormLabel><FormControl><Input type="number" placeholder="400" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField control={control} name="vesa" render={({ field }) => (<FormItem><FormLabel>VESA</FormLabel><FormControl><Input placeholder="np. 400x400" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={control} name="orientation" render={() => (
-                <FormItem>
-                    <FormLabel>Orientacja</FormLabel>
-                    <div className="flex gap-4 pt-2">
-                    {['portrait', 'landscape'].map((item) => (
-                        <FormField key={item} control={control} name="orientation" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter((value) => value !== item))}} /></FormControl><FormLabel className="font-normal">{item.charAt(0).toUpperCase() + item.slice(1)}</FormLabel></FormItem>)} />
-                    ))}
-                    </div><FormMessage />
-                </FormItem>
-            )}/>
-        </div>
+      <Separator className="my-4" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField control={control} name="nativeResolution" render={({ field }) => (<FormItem><FormLabel>Rozdzielczość</FormLabel><FormControl><Input placeholder="np. 3840x2160" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={control} name="brightness" render={({ field }) => (<FormItem><FormLabel>Jasność (nity)</FormLabel><FormControl><Input type="number" placeholder="400" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField control={control} name="vesa" render={({ field }) => (<FormItem><FormLabel>VESA</FormLabel><FormControl><Input placeholder="np. 400x400" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={control} name="orientation" render={() => (
+          <FormItem>
+            <FormLabel>Orientacja</FormLabel>
+            <div className="flex gap-4 pt-2">
+              {['portrait', 'landscape'].map((item) => (
+                <FormField key={item} control={control} name="orientation" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { return checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter((value) => value !== item)) }} /></FormControl><FormLabel className="font-normal">{item.charAt(0).toUpperCase() + item.slice(1)}</FormLabel></FormItem>)} />
+              ))}
+            </div><FormMessage />
+          </FormItem>
+        )} />
+      </div>
     </>
   );
 
   const renderLedScreenFields = () => (
-     <>
+    <>
       <Separator className="my-4" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <FormField control={control} name="pixelPitch" render={({ field }) => (<FormItem><FormLabel>Pixel pitch</FormLabel><FormControl><Input type="number" step="0.1" placeholder="2.6" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
@@ -231,7 +231,7 @@ export function MultimediaDeviceForm({
         <FormField control={control} name="brightness" render={({ field }) => (<FormItem><FormLabel>Jasność (nity)</FormLabel><FormControl><Input type="number" placeholder="1000" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField control={control} name="ledPowerAvg" render={({ field }) => (<FormItem><FormLabel>Pobór mocy (śr.) [W]</FormLabel><FormControl><Input type="number" placeholder="150" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={control} name="ledPowerAvg" render={({ field }) => (<FormItem><FormLabel>Pobór mocy (śr.) [W]</FormLabel><FormControl><Input type="number" placeholder="150" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField control={control} name="maxModulesPerCircuit" render={({ field }) => (<FormItem><FormLabel>Maks. modułów / obwód zasilający</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
@@ -242,12 +242,12 @@ export function MultimediaDeviceForm({
           <div className="space-y-0.5"><FormLabel>Urządzenie wewnętrzne (indoor)</FormLabel></div>
           <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
         </FormItem>
-      )}/>
+      )} />
     </>
   );
-  
+
   const renderSignalDistributionFields = () => (
-     <>
+    <>
       <Separator className="my-4" />
       <FormField control={control} name="distributionType" render={({ field }) => (<FormItem><FormLabel>Typ urządzenia</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="processor">Procesor</SelectItem><SelectItem value="scaler">Skaler</SelectItem><SelectItem value="switcher">Switcher</SelectItem><SelectItem value="splitter">Splitter</SelectItem><SelectItem value="converter">Konwerter</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
       <FormField control={control} name="inputsOutputs" render={({ field }) => (<FormItem><FormLabel>Wejścia / Wyjścia</FormLabel><FormControl><Input placeholder="np. 4x HDMI, 2x SDI" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
@@ -268,15 +268,15 @@ export function MultimediaDeviceForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-                <FormField control={control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.name')}</FormLabel><FormControl><Input placeholder={t('devices.name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={control} name="manufacturer" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.manufacturer')}</FormLabel><FormControl><Input placeholder={t('devices.manufacturer_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.name')}</FormLabel><FormControl><Input placeholder={t('devices.name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={control} name="manufacturer" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.manufacturer')}</FormLabel><FormControl><Input placeholder={t('devices.manufacturer_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
 
             {category.subcategories && category.subcategories.length > 0 && (
               <FormField control={control} name="subcategory" render={({ field }) => (<FormItem><FormLabel>Podkategoria</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz podkategorię..." /></SelectTrigger></FormControl><SelectContent>{category.subcategories?.map(sub => (<SelectItem key={sub.key} value={sub.key}>{t(`devices.subcategories.${sub.key}`, sub.label)}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             )}
-            
-            <Separator className="my-2"/>
+
+            <Separator className="my-2" />
 
             <div className="grid grid-cols-3 gap-4">
               <FormField control={control} name="powerW" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.power')}</FormLabel><FormControl><Input type="number" {...field} onChange={(e) => { lastChanged.current = 'power'; field.onChange(e); }} /></FormControl><FormMessage /></FormItem>)} />
@@ -291,8 +291,8 @@ export function MultimediaDeviceForm({
             {subcategory === 'tvs' && renderTvFields()}
             {subcategory === 'led_screens' && renderLedScreenFields()}
             {subcategory === 'signal_distribution' && renderSignalDistributionFields()}
-            
-            <Separator className="my-2"/>
+
+            <Separator className="my-2" />
             <FormField control={control} name="notes" render={({ field }) => (<FormItem><FormLabel>{t('common.notes')}</FormLabel><FormControl><Textarea placeholder={t('devices.notes_placeholder')} {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
 
             <DialogFooter>

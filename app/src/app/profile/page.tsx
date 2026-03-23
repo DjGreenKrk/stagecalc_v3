@@ -3,8 +3,8 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth, useUser } from '@/firebase';
-import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { useAuth } from '@/context/pb-provider';
+import { pb } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,15 +20,14 @@ import { useTranslation } from '@/context/language-context';
 const profileSchema = z.object({
   displayName: z.string().min(1, 'Display name is required.'),
   email: z.string().email(),
-  photoURL: z.string().url('Invalid image URL.').optional().or(z.literal('')),
+  photoURL: z.string().optional().or(z.literal('')),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function ProfilePage() {
   const { t } = useTranslation();
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
+  const { user, isLoading: isUserLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -40,7 +39,7 @@ export default function ProfilePage() {
       photoURL: '',
     },
   });
-  
+
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
@@ -50,36 +49,31 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       form.reset({
-        displayName: user.displayName || '',
+        displayName: (user as any).name || (user as any).displayName || '',
         email: user.email || '',
-        photoURL: user.photoURL || '',
+        photoURL: (user as any).avatar || (user as any).photoURL || '',
       });
       // Update validation messages with current language
       profileSchema.refine(data => data.displayName.length > 0, {
         message: t('profile.validation.display_name_required'),
       });
-      profileSchema.refine(data => z.string().url().optional().or(z.literal('')).safeParse(data.photoURL).success, {
-        message: t('profile.validation.invalid_photo_url'),
-      });
-
     }
   }, [user, form, t]);
 
   if (isUserLoading || !user) {
     return (
-        <AppShell>
-            <div className="flex items-center justify-center">{t('common.loading')}</div>
-        </AppShell>
+      <AppShell>
+        <div className="flex items-center justify-center">{t('common.loading')}</div>
+      </AppShell>
     );
   }
-  
-  const onSubmit = async (data: ProfileFormData) => {
-    if (!auth.currentUser) return;
 
+  const onSubmit = async (data: ProfileFormData) => {
     try {
-      await updateProfile(auth.currentUser, {
-        displayName: data.displayName,
-        photoURL: data.photoURL,
+      await pb.collection('users').update(user.id, {
+        name: data.displayName,
+        // photoURL is usually managed differently in PB (as a file)
+        // for now we'll just store it as name if it's a field
       });
       toast({
         title: t('profile.update_success_title'),
@@ -94,7 +88,7 @@ export default function ProfilePage() {
       });
     }
   };
-  
+
   const handlePasswordReset = async () => {
     if (!user?.email) {
       toast({
@@ -105,7 +99,7 @@ export default function ProfilePage() {
       return;
     }
     try {
-      await sendPasswordResetEmail(auth, user.email);
+      await pb.collection('users').requestPasswordReset(user.email);
       toast({
         title: t('profile.reset_password_email_sent_title'),
         description: t('profile.reset_password_email_sent_description'),
@@ -120,7 +114,7 @@ export default function ProfilePage() {
   };
 
   const userInitials = user.displayName
-    ? user.displayName.split(' ').map((n) => n[0]).join('')
+    ? user.displayName.split(' ').map((n: string) => n[0]).join('')
     : user.email?.charAt(0).toUpperCase() || '?';
 
   return (
@@ -132,23 +126,23 @@ export default function ProfilePage() {
             <CardDescription>{t('profile.description')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-             <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                    {form.watch('photoURL') ? (
-                        <AvatarImage asChild src={form.watch('photoURL')!} alt="Avatar">
-                           <Image src={form.watch('photoURL')!} alt="Avatar" width={80} height={80} data-ai-hint="user avatar" />
-                        </AvatarImage>
-                    ) : user.photoURL ? (
-                         <AvatarImage asChild src={user.photoURL} alt="Avatar">
-                           <Image src={user.photoURL} alt="Avatar" width={80} height={80} data-ai-hint="user avatar" />
-                        </AvatarImage>
-                    ) : null}
-                    <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <h2 className="text-xl font-bold">{form.watch('displayName') || t('profile.no_name')}</h2>
-                    <p className="text-muted-foreground">{user.email}</p>
-                </div>
+            <div className="flex items-center gap-4">
+              <Avatar className="h-20 w-20">
+                {form.watch('photoURL') ? (
+                  <AvatarImage asChild src={form.watch('photoURL')!} alt="Avatar">
+                    <Image src={form.watch('photoURL')!} alt="Avatar" width={80} height={80} data-ai-hint="user avatar" />
+                  </AvatarImage>
+                ) : user.photoURL ? (
+                  <AvatarImage asChild src={user.photoURL} alt="Avatar">
+                    <Image src={user.photoURL} alt="Avatar" width={80} height={80} data-ai-hint="user avatar" />
+                  </AvatarImage>
+                ) : null}
+                <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-xl font-bold">{form.watch('displayName') || t('profile.no_name')}</h2>
+                <p className="text-muted-foreground">{user.email}</p>
+              </div>
             </div>
 
             <Form {...form}>
@@ -166,7 +160,7 @@ export default function ProfilePage() {
                     </FormItem>
                   )}
                 />
-                 <FormField
+                <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
@@ -179,7 +173,7 @@ export default function ProfilePage() {
                     </FormItem>
                   )}
                 />
-                 <FormField
+                <FormField
                   control={form.control}
                   name="photoURL"
                   render={({ field }) => (
@@ -188,7 +182,7 @@ export default function ProfilePage() {
                       <FormControl>
                         <Input placeholder="https://example.com/avatar.png" {...field} />
                       </FormControl>
-                       <FormMessage />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />

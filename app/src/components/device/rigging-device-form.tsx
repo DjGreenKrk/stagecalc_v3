@@ -54,7 +54,7 @@ const getRiggingFormSchema = (t: (key: string) => string) => z.object({
   weightKg: z.coerce.number().min(0, t('devices.validation.weight_positive')),
   ipRating: z.string().optional(),
   notes: z.string().optional(),
-  
+
   trussType: z.enum(['duo', 'trio', 'quatro']).optional(),
   height: z.coerce.number().optional(),
   width: z.coerce.number().optional(),
@@ -73,7 +73,7 @@ type RiggingDeviceFormProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   device?: Omit<Device, 'id'> & { id?: string };
-  onSave: (device: Omit<Device, 'id' | 'category'> & { id?: string }) => void;
+  onSave: (device: Omit<Device, 'category' | 'id'> & { id?: string }) => void;
   category: DeviceCategory;
 };
 
@@ -141,16 +141,16 @@ export function RiggingDeviceForm({
     let dataToSave = { ...sanitizedValues, id: device?.id };
 
     if (dataToSave.subcategory === 'trusses') {
-        if (dataToSave.weightChart && dataToSave.weightChart.length > 0) {
-            dataToSave.weightKg = dataToSave.weightChart[0].weight || 0;
-        } else {
-            dataToSave.weightKg = 0;
-        }
+      if (dataToSave.weightChart && dataToSave.weightChart.length > 0) {
+        dataToSave.weightKg = dataToSave.weightChart[0].weight || 0;
+      } else {
+        dataToSave.weightKg = 0;
+      }
     }
-    
-    onSave(dataToSave);
+
+    onSave(dataToSave as any);
   };
-  
+
   const renderTrussFields = () => (
     <>
       <Separator className="my-4" />
@@ -175,8 +175,8 @@ export function RiggingDeviceForm({
             <TableBody>
               {weightChartFields.map((item, index) => (
                 <TableRow key={item.id}>
-                  <TableCell><FormField control={control} name={`weightChart.${index}.length`} render={({ field }) => <Input type="number" {...field} /> } /></TableCell>
-                  <TableCell><FormField control={control} name={`weightChart.${index}.weight`} render={({ field }) => <Input type="number" step="0.1" {...field} /> } /></TableCell>
+                  <TableCell><FormField control={control} name={`weightChart.${index}.length`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
+                  <TableCell><FormField control={control} name={`weightChart.${index}.weight`} render={({ field }) => <Input type="number" step="0.1" {...field} />} /></TableCell>
                   <TableCell><Button type="button" variant="ghost" size="icon" onClick={() => removeWeightChart(index)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button></TableCell>
                 </TableRow>
               ))}
@@ -206,11 +206,11 @@ export function RiggingDeviceForm({
             <TableBody>
               {loadChartFields.map((item, index) => (
                 <TableRow key={item.id}>
-                  <TableCell><FormField control={control} name={`loadChart.${index}.length`} render={({ field }) => <Input type="number" {...field} /> } /></TableCell>
-                  <TableCell><FormField control={control} name={`loadChart.${index}.pointLoad`} render={({ field }) => <Input type="number" {...field} /> } /></TableCell>
-                  <TableCell><FormField control={control} name={`loadChart.${index}.deflectionPointLoad`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} /> } /></TableCell>
-                  <TableCell><FormField control={control} name={`loadChart.${index}.distribLoad`} render={({ field }) => <Input type="number" {...field} /> } /></TableCell>
-                  <TableCell><FormField control={control} name={`loadChart.${index}.deflectionDistribLoad`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} /> } /></TableCell>
+                  <TableCell><FormField control={control} name={`loadChart.${index}.length`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
+                  <TableCell><FormField control={control} name={`loadChart.${index}.pointLoad`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
+                  <TableCell><FormField control={control} name={`loadChart.${index}.deflectionPointLoad`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} />} /></TableCell>
+                  <TableCell><FormField control={control} name={`loadChart.${index}.distribLoad`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
+                  <TableCell><FormField control={control} name={`loadChart.${index}.deflectionDistribLoad`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} />} /></TableCell>
                   <TableCell><Button type="button" variant="ghost" size="icon" onClick={() => removeLoadChart(index)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button></TableCell>
                 </TableRow>
               ))}
@@ -262,19 +262,19 @@ export function RiggingDeviceForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-                <FormField control={control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.name')}</FormLabel><FormControl><Input placeholder={t('devices.name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={control} name="manufacturer" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.manufacturer')}</FormLabel><FormControl><Input placeholder={t('devices.manufacturer_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.name')}</FormLabel><FormControl><Input placeholder={t('devices.name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={control} name="manufacturer" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.manufacturer')}</FormLabel><FormControl><Input placeholder={t('devices.manufacturer_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
 
             {category.subcategories && category.subcategories.length > 0 && (
               <FormField control={control} name="subcategory" render={({ field }) => (<FormItem><FormLabel>Podkategoria</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz podkategorię..." /></SelectTrigger></FormControl><SelectContent>{category.subcategories?.map(sub => (<SelectItem key={sub.key} value={sub.key}>{t(`devices.subcategories.${sub.key}`, sub.label)}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             )}
-            
+
             {subcategory === 'trusses' && renderTrussFields()}
             {subcategory === 'hoists' && renderHoistFields()}
             {subcategory === 'hooks' && renderHookFields()}
-            
-            <Separator className="my-2"/>
+
+            <Separator className="my-2" />
 
             <FormField control={control} name="notes" render={({ field }) => (<FormItem><FormLabel>{t('common.notes')}</FormLabel><FormControl><Textarea placeholder={t('devices.notes_placeholder')} {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
 

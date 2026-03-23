@@ -23,16 +23,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { useCollection, useUser } from '@/firebase';
 import type { Calculation } from '@/lib/definitions';
 import { useTranslation } from '@/context/language-context';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function TrussesPage() {
-  const { t, getLocale } = useTranslation();
-  const firestore = useFirestore();
+  const { t, getLocale, language } = useTranslation();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
@@ -45,16 +43,19 @@ export default function TrussesPage() {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
-  
-  const calculationsQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(
-      collection(firestore, 'calculations'),
-      where('ownerUserId', '==', user.uid)
-    );
-  }, [firestore, user]);
 
-  const { data: calculations, isLoading: areCalculationsLoading } = useCollection<Calculation>(calculationsQuery);
+  const calculationsOptions = useMemo(() => {
+    if (!user) return null;
+    return {
+      filter: `ownerUserId = "${user.id}"`,
+      sort: '-lastModified',
+    };
+  }, [user]);
+
+  const { data: calculations, isLoading: areCalculationsLoading } = useCollection<Calculation>(
+    user ? 'calculations' : null,
+    calculationsOptions
+  );
 
   const filteredCalculations = useMemo(() => {
     if (!calculations) return [];
@@ -78,10 +79,10 @@ export default function TrussesPage() {
       setIsDeleteConfirmOpen(true);
     }, 0);
   };
-  
+
   const confirmDelete = () => {
     if (selectedCalculation) {
-      deleteDocumentNonBlocking(doc(firestore, 'calculations', selectedCalculation.id));
+      deleteDocumentNonBlocking('calculations', selectedCalculation.id);
     }
     setIsDeleteConfirmOpen(false);
     setSelectedCalculation(undefined);
@@ -148,31 +149,32 @@ export default function TrussesPage() {
                       </Link>
                     </TableCell>
                     <TableCell className="text-right">
-                      {new Date(calc.lastModified).toLocaleDateString(getLocale(), {
+                      {new Date(calc.lastModified).toLocaleDateString(language === 'pl' ? 'pl-PL' : 'en-US', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
                       })}
                     </TableCell>
+
                     <TableCell className="text-right">
-                       <DropdownMenu>
-                         <DropdownMenuTrigger asChild>
-                           <Button variant="ghost" size="icon" className="h-8 w-8">
-                             <MoreHorizontal className="h-4 w-4" />
-                           </Button>
-                         </DropdownMenuTrigger>
-                         <DropdownMenuContent align="end">
-                           <DropdownMenuItem onClick={() => handleOpenCalculation(calc.id)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              <span>Otwórz</span>
-                           </DropdownMenuItem>
-                           <DropdownMenuSeparator />
-                           <DropdownMenuItem onClick={() => handleDeleteRequest(calc)} className="text-destructive focus:text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>{t('common.delete')}</span>
-                           </DropdownMenuItem>
-                         </DropdownMenuContent>
-                       </DropdownMenu>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenCalculation(calc.id)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            <span>Otwórz</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleDeleteRequest(calc)} className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>{t('common.delete')}</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -181,7 +183,7 @@ export default function TrussesPage() {
           </Table>
         </CardContent>
       </Card>
-      
+
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

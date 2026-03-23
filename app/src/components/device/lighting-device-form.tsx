@@ -58,7 +58,7 @@ type LightingDeviceFormProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   device?: Device;
-  onSave: (device: Omit<Device, 'category'> & { id?: string }) => void;
+  onSave: (device: Omit<Device, 'category' | 'id'> & { id?: string }) => void;
   category: DeviceCategory;
 };
 
@@ -152,7 +152,7 @@ export function LightingDeviceForm({
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const dataToSave = { ...values, id: device?.id };
-    onSave(dataToSave);
+    onSave(dataToSave as any);
     onOpenChange(false);
   };
 
@@ -173,15 +173,15 @@ export function LightingDeviceForm({
               <FormField control={control} name="manufacturer" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.manufacturer')}</FormLabel><FormControl><Input placeholder="np. Pro Light Co." {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
 
-             {category.subcategories && category.subcategories.length > 0 && (
+            {category.subcategories && category.subcategories.length > 0 && (
               <FormField control={control} name="subcategory" render={({ field }) => (<FormItem><FormLabel>Podkategoria</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz podkategorię..." /></SelectTrigger></FormControl><SelectContent>{category.subcategories?.map(sub => (<SelectItem key={sub.key} value={sub.key}>{t(`devices.subcategories.${sub.key}`, sub.label)}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             )}
 
             {(subcategory === 'moving_heads' || subcategory === 'static_lighting') && (
-                 <FormField control={control} name="lightSourceType" render={({ field }) => (<FormItem><FormLabel>Typ urządzenia</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz typ..." /></SelectTrigger></FormControl><SelectContent>{currentLightSourceTypes.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+              <FormField control={control} name="lightSourceType" render={({ field }) => (<FormItem><FormLabel>Typ urządzenia</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz typ..." /></SelectTrigger></FormControl><SelectContent>{currentLightSourceTypes.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             )}
 
-            <Separator className="my-2"/>
+            <Separator className="my-2" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={control} name="powerW" render={({ field }) => (<FormItem><FormLabel>{t('devices.table.power')}</FormLabel><FormControl><Input type="number" {...field} onChange={(e) => { lastChanged.current = 'power'; field.onChange(e); }} /></FormControl><FormMessage /></FormItem>)} />
@@ -201,44 +201,44 @@ export function LightingDeviceForm({
                 )}
               />
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={control} name="ipRating" render={({ field }) => (<FormItem><FormLabel>{t('devices.ip_rating')}</FormLabel><FormControl><Input placeholder="np. IP20 lub IP65" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
               {(subcategory === 'moving_heads' || subcategory === 'static_lighting') && (
                 <FormField control={control} name="colorSystem" render={({ field }) => (<FormItem><FormLabel>System Koloru</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz system..." /></SelectTrigger></FormControl><SelectContent>{ColorSystems.map(cs => (<SelectItem key={cs} value={cs}>{cs}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
               )}
             </div>
-            
+
             {(colorSystem === 'Discharge' || colorSystem === 'Tungsten') && (
-                 <FormField control={control} name="bulbType" render={({ field }) => (<FormItem><FormLabel>Rodzaj żarówki</FormLabel><FormControl><Input placeholder="np. HMI 575, MSR 700" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={control} name="bulbType" render={({ field }) => (<FormItem><FormLabel>Rodzaj żarówki</FormLabel><FormControl><Input placeholder="np. HMI 575, MSR 700" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
             )}
 
             {(subcategory === 'moving_heads' || subcategory === 'static_lighting') && (
               <>
-              <Separator className="my-2" />
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField control={control} name="dmxModes" render={({ field }) => (<FormItem><FormLabel>Tryby DMX</FormLabel><FormControl><Input placeholder="np. 16/24/32" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={control} name="zoomRange" render={({ field }) => (<FormItem><FormLabel>Zakres Zoom / Kąt</FormLabel><FormControl><Input placeholder="np. 10-40 lub 25" {...field} value={field.value || ''}/></FormControl><FormMessage /></FormItem>)} />
-              </div>
+                <Separator className="my-2" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField control={control} name="dmxModes" render={({ field }) => (<FormItem><FormLabel>Tryby DMX</FormLabel><FormControl><Input placeholder="np. 16/24/32" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={control} name="zoomRange" render={({ field }) => (<FormItem><FormLabel>Zakres Zoom / Kąt</FormLabel><FormControl><Input placeholder="np. 10-40 lub 25" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                </div>
               </>
             )}
-            
+
             <Separator className="my-2" />
 
             <FormField control={control} name="controlProtocols" render={() => (
               <FormItem>
-                  <FormLabel>Protokoły sterowania</FormLabel>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <FormLabel>Protokoły sterowania</FormLabel>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {LightingControlProtocols.map((item) => (
-                      <FormField key={item} control={control} name="controlProtocols" render={({ field }) => {
-                          const fieldValue = Array.isArray(field.value) ? field.value : [];
-                          return (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={fieldValue.includes(item)} onCheckedChange={(checked) => {return checked ? field.onChange([...fieldValue, item]) : field.onChange(fieldValue.filter((value) => value !== item))}} /></FormControl><FormLabel className="font-normal">{item}</FormLabel></FormItem>)
-                      }} />
+                    <FormField key={item} control={control} name="controlProtocols" render={({ field }) => {
+                      const fieldValue = Array.isArray(field.value) ? field.value : [];
+                      return (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={fieldValue.includes(item)} onCheckedChange={(checked) => { return checked ? field.onChange([...fieldValue, item]) : field.onChange(fieldValue.filter((value) => value !== item)) }} /></FormControl><FormLabel className="font-normal">{item}</FormLabel></FormItem>)
+                    }} />
                   ))}
-                  </div>
-                  <FormMessage />
+                </div>
+                <FormMessage />
               </FormItem>
-              )}
+            )}
             />
 
             {(subcategory === 'moving_heads' || subcategory === 'static_lighting') && (
@@ -252,7 +252,7 @@ export function LightingDeviceForm({
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
-              )}/>
+              )} />
             )}
 
             <FormField control={control} name="notes" render={({ field }) => (<FormItem><FormLabel>{t('common.notes')}</FormLabel><FormControl><Textarea placeholder={t('devices.notes_placeholder')} {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />

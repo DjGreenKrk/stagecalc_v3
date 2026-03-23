@@ -102,7 +102,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-               <SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/trusses')}
@@ -136,7 +136,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 >
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
-                      variant="ghost"
+                      variant="default"
                       className="w-full justify-start"
                       isActive={isCatalogActive}
                       tooltip="Katalog"

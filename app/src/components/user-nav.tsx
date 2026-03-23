@@ -15,21 +15,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth, useUser } from '@/firebase';
-import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/context/language-context';
 
 export function UserNav() {
   const { t } = useTranslation();
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
+  const { logout } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
-    await signOut(auth);
+    logout();
     router.push('/login');
   };
-  
+
   if (isUserLoading) {
     return null;
   }
@@ -43,7 +42,7 @@ export function UserNav() {
   }
 
   const userInitials = user.displayName
-    ? user.displayName.split(' ').map((n) => n[0]).join('')
+    ? user.displayName.split(' ').map((n: string) => n[0]).join('')
     : user.email?.charAt(0).toUpperCase() || '?';
 
   return (
@@ -51,9 +50,9 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-             {user.photoURL && (
+            {user.photoURL && (
               <AvatarImage asChild src={user.photoURL} alt={user.displayName || t('user_nav.user_avatar_alt')}>
-                <Image 
+                <Image
                   src={user.photoURL}
                   alt={user.displayName || t('user_nav.user_avatar_alt')}
                   width={36}

@@ -7,12 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calculator, Zap } from 'lucide-react';
 import Link from 'next/link';
-import { useFirebase } from '@/firebase';
-import {
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-} from 'firebase/auth';
+import { useAuth } from '@/context/pb-provider';
+import { pb } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -24,7 +20,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
-  const { auth, user, isUserLoading } = useFirebase();
+  const { user, isLoading: isUserLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -43,42 +39,21 @@ export default function LoginPage() {
 
   const handleAuthError = (error: any) => {
     let title = t('login.errors.default_title');
-    let description = t('login.errors.default_description');
+    let description = error.message || t('login.errors.default_description');
 
-    switch (error.code) {
-      case 'auth/user-not-found':
-      case 'auth/wrong-password':
-      case 'auth/invalid-credential':
-        title = t('login.errors.invalid_credentials_title');
-        description = t('login.errors.invalid_credentials_description');
-        break;
-      case 'auth/email-already-in-use':
-        title = t('login.errors.email_in_use_title');
-        description = t('login.errors.email_in_use_description');
-        break;
-      case 'auth/weak-password':
-        title = t('login.errors.weak_password_title');
-        description = t('login.errors.weak_password_description');
-        break;
-      case 'auth/popup-closed-by-user':
-          title = t('login.errors.popup_closed_title');
-          description = t('login.errors.popup_closed_description');
-          break;
-      case 'auth/invalid-email':
-          title = t('login.errors.invalid_email_title');
-          description = t('login.errors.invalid_email_description');
-          break;
-      default:
-        console.error(error);
-        break;
+    // PocketBase errors often come as ClientResponseError
+    if (error.status === 400) {
+      title = t('login.errors.invalid_credentials_title');
+      description = t('login.errors.invalid_credentials_description');
     }
+
     toast({
       variant: 'destructive',
       title,
       description,
     });
   };
-  
+
   const handlePasswordReset = async () => {
     if (!email) {
       toast({
@@ -88,9 +63,8 @@ export default function LoginPage() {
       });
       return;
     }
-    if (!auth) return;
     try {
-      await sendPasswordResetEmail(auth, email);
+      await pb.collection('users').requestPasswordReset(email);
       toast({
         title: t('login.reset.success_title'),
         description: t('login.reset.success_description'),
@@ -102,14 +76,20 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) return;
     try {
       if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        // PocketBase signup usually involves creating a record
+        await pb.collection('users').create({
+          email,
+          password,
+          passwordConfirm: password,
+          name: email.split('@')[0], // placeholder
+        });
+        // After creation, login
+        await pb.collection('users').authWithPassword(email, password);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        await pb.collection('users').authWithPassword(email, password);
       }
-      // router.push is handled by the useEffect
     } catch (error) {
       handleAuthError(error);
     }
@@ -178,7 +158,7 @@ export default function LoginPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <div className="relative w-full my-6">
           <Separator />
           <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-background px-2 text-xs text-muted-foreground">{t('common.or')}</span>

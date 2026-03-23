@@ -1,23 +1,24 @@
-
 'use client';
 
-import { ThemeProvider } from '@/components/theme-provider';
-import { FirebaseProvider } from '@/firebase';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+import { ThemeProvider } from './theme-provider';
 import { LanguageProvider } from '@/context/language-context';
 
+import { PocketBaseProvider } from '@/context/pb-provider';
+
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
-    <FirebaseProvider>
-      <LanguageProvider>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
-      </LanguageProvider>
-    </FirebaseProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <PocketBaseProvider>
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
+        </PocketBaseProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
