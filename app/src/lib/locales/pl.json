@@ -1,0 +1,271 @@
+
+{
+  "common": {
+    "loading": "Ładowanie...",
+    "actions": "Akcje",
+    "edit": "Edytuj",
+    "delete": "Usuń",
+    "save": "Zapisz",
+    "save_changes": "Zapisz zmiany",
+    "cancel": "Anuluj",
+    "continue": "Kontynuuj",
+    "are_you_sure": "Czy na pewno?",
+    "open_menu": "Otwórz menu",
+    "notes": "Notatki",
+    "or": "LUB",
+    "export": "Eksportuj",
+    "calculating": "Obliczanie...",
+    "recalculate": "Przelicz",
+    "more_options": "Więcej opcji",
+    "loading_data": "Ładowanie danych...",
+    "phase": "faza",
+    "phases": "fazy",
+    "none": "Brak",
+    "password": "Hasło",
+    "add": "Dodaj",
+    "error": "Błąd",
+    "files": "Pliki"
+  },
+  "nav": {
+    "devices": "Urządzenia",
+    "locations": "Lokalizacje",
+    "clients": "Klienci",
+    "settings": "Ustawienia",
+    "quick_calculator": "Szybki kalkulator",
+    "trusses": "Nośność kraty"
+  },
+  "user_nav": {
+    "user_avatar_alt": "Avatar użytkownika",
+    "user": "Użytkownik",
+    "profile": "Profil",
+    "settings": "Ustawienia",
+    "log_out": "Wyloguj się"
+  },
+  "login": {
+    "welcome_back": "Witaj ponownie",
+    "create_account": "Utwórz konto",
+    "log_in_to_manage_events": "Zaloguj się, aby zarządzać wydarzeniami.",
+    "enter_details_to_register": "Wprowadź swoje dane, aby się zarejestrować.",
+    "log_in": "Zaloguj się",
+    "sign_up": "Zarejestruj się",
+    "already_have_account": "Masz już konto?",
+    "dont_have_account": "Nie masz jeszcze konta?",
+    "try_demo": "Wypróbuj demo StageCalc",
+    "forgot_password": "Zapomniałeś hasła?",
+    "errors": {
+      "default_title": "Wystąpił błąd",
+      "default_description": "Spróbuj ponownie później.",
+      "invalid_credentials_title": "Nieprawidłowe dane",
+      "invalid_credentials_description": "Sprawdź swój email i hasło.",
+      "invalid_email_title": "Nieprawidłowy email",
+      "invalid_email_description": "Proszę podać prawidłowy adres email.",
+      "email_in_use_title": "Email już w użyciu",
+      "email_in_use_description": "Użyj innego adresu email lub zaloguj się.",
+      "weak_password_title": "Zbyt słabe hasło",
+      "weak_password_description": "Hasło powinno mieć co najmniej 6 znaków.",
+      "popup_closed_title": "Logowanie anulowane",
+      "popup_closed_description": "Okno logowania Google zostało zamknięte.",
+      "email_required_title": "Email jest wymagany",
+      "email_required_description": "Proszę podać swój email, aby zresetować hasło."
+    },
+    "reset": {
+      "success_title": "Sprawdź swoją pocztę",
+      "success_description": "Link do resetowania hasła został wysłany na Twój adres email."
+    }
+  },
+  "summary": {
+    "power": "Całkowita moc",
+    "current": "Całkowity prąd",
+    "weight": "Całkowita waga"
+  },
+  "devices": {
+    "title": "Katalog urządzeń",
+    "add_device": "Dodaj urządzenie",
+    "edit_device": "Edytuj urządzenie",
+    "delete_warning_description": "Tej akcji nie można cofnąć. Spowoduje to trwałe usunięcie urządzenia \"{{deviceName}}\".",
+    "name_placeholder": "np. LED Par 64",
+    "manufacturer_placeholder": "np. ShowTec",
+    "ip_rating": "Klasa IP",
+    "light_source": "Źródło światła",
+    "notes_placeholder": "Dodatkowe uwagi...",
+    "search_placeholder": "Szukaj po nazwie lub producencie...",
+    "favorites": "Ulubione",
+    "add_to_favorites": "Dodaj do ulubionych",
+    "add_to_favorites_desc": "Ulubione urządzenia pojawią się na górze listy.",
+    "no_devices_found": "Nie znaleziono urządzeń",
+    "table": {
+      "name": "Nazwa",
+      "manufacturer": "Producent",
+      "power": "Moc (W)",
+      "current": "Prąd (A)",
+      "weight": "Waga (kg)"
+    },
+    "validation": {
+      "name_required": "Nazwa jest wymagana.",
+      "manufacturer_required": "Producent jest wymagany.",
+      "power_positive": "Moc musi być liczbą dodatnią.",
+      "current_positive": "Prąd musi być liczbą dodatnią.",
+      "weight_positive": "Waga musi być liczbą dodatnią."
+    },
+    "rigging_points": "Punkty montażowe (haki)",
+    "subcategories": {
+      "moving_heads": "Urządzenia inteligentne",
+      "static_lighting": "Oświetlenie statyczne",
+      "controllers": "Sterowanie i dystrybucja sygnału",
+      "smoke_generators": "Wytwornice dymu",
+      "speakers": "Głośniki",
+      "amplifiers": "Wzmacniacze",
+      "sound_controllers": "Sterowanie i dystrybucja sygnału",
+      "projectors": "Projektory",
+      "projection_screens": "Ekrany projekcyjne",
+      "led_screens": "Ekrany LED",
+      "tvs": "Telewizory",
+      "signal_distribution": "Sterowanie i dystrybucja sygnału",
+      "power_cables": "Kable zasilające",
+      "distribution_boxes": "Rozdzielnice",
+      "adapters": "Adaptery i redukcje",
+      "trusses": "Kratownice",
+      "hoists": "Wciągarki",
+      "hooks": "Haki i zawiesia"
+    }
+  },
+  "locations": {
+    "title": "Lokalizacje",
+    "add_location": "Dodaj lokalizację",
+    "edit_location": "Edytuj lokalizację",
+    "delete_warning_description": "Tej akcji nie można cofnąć. Spowoduje to trwałe usunięcie lokalizacji \"{{locationName}}\".",
+    "name_placeholder": "Główna scena",
+    "address_placeholder": "ul. Muzyczna 123, 00-001 Warszawa, Polska",
+    "capacity_people": "Pojemność (osoby)",
+    "notes_placeholder": "Dodatkowe informacje o lokalizacji...",
+    "power_connectors": "Przyłącza zasilania",
+    "type_placeholder": "Typ",
+    "quantity": "Ilość",
+    "connector_notes_placeholder": "Uwagi (np. na sali za sceną)",
+    "total_available_power": "Całkowita dostępna moc",
+    "capacity": "Pojemność",
+    "people": "osób",
+    "pieces": "szt.",
+    "table": {
+      "name": "Nazwa",
+      "address": "Adres",
+      "max_power": "Maks. moc"
+    },
+    "validation": {
+      "name_required": "Nazwa jest wymagana.",
+      "address_required": "Adres jest wymagany."
+    }
+  },
+  "clients": {
+    "title": "Klienci",
+    "add_client": "Dodaj klienta",
+    "edit_client": "Edytuj klienta",
+    "update_client_details": "Zaktualizuj dane klienta.",
+    "enter_client_details": "Wprowadź dane, aby dodać nowego klienta.",
+    "client_name": "Nazwa klienta",
+    "client_name_placeholder": "Nazwa firmy lub Imię i Nazwisko",
+    "contact_person": "Osoba kontaktowa",
+    "phone": "Telefon",
+    "notes_placeholder": "Dodatkowe informacje, np. preferencje...",
+    "no_clients_found": "Nie znaleziono klientów",
+    "add_first_client": "Dodaj pierwszego klienta, aby zacząć.",
+    "delete_warning_description": "Tej akcji nie można cofnąć. Spowoduje to trwałe usunięcie klienta \"{{clientName}}\".",
+    "search_placeholder": "Szukaj po nazwie, kontakcie, NIP...",
+    "try_different_query": "Spróbuj wpisać inną frazę.",
+    "table": {
+      "name": "Nazwa klienta",
+      "contact": "Kontakt",
+      "email": "Email",
+      "address": "Adres"
+    },
+    "validation": {
+      "name_required": "Nazwa klienta jest wymagana.",
+      "invalid_email": "Nieprawidłowy adres email."
+    }
+  },
+  "profile": {
+    "title": "Twój profil",
+    "description": "Zarządzaj swoimi danymi i ustawieniami konta.",
+    "no_name": "Brak nazwy",
+    "display_name": "Nazwa wyświetlana",
+    "photo_url": "Adres URL zdjęcia profilowego",
+    "reset_password": "Zresetuj hasło",
+    "update_success_title": "Sukces!",
+    "update_success_description": "Twój profil został zaktualizowany.",
+    "update_error_description": "Nie udało się zaktualizować profilu. {{message}}",
+    "reset_password_no_email": "Brak adresu e-mail do wysłania linku resetującego.",
+    "reset_password_email_sent_title": "Wysłano e-mail",
+    "reset_password_email_sent_description": "Sprawdź swoją skrzynkę pocztową, aby zresetować hasło.",
+     "validation": {
+        "display_name_required": "Nazwa wyświetlana jest wymagana.",
+        "invalid_photo_url": "Nieprawidłowy adres URL obrazu."
+    }
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "description": "Zarządzaj ustawieniami aplikacji i preferencjami.",
+    "appearance": {
+      "title": "Wygląd",
+      "theme": "Motyw",
+      "theme_description": "Wybierz jasny lub ciemny motyw.",
+      "select_theme_placeholder": "Wybierz motyw",
+      "light": "Jasny",
+      "dark": "Ciemny",
+      "system": "Systemowy"
+    },
+    "language": {
+      "title": "Język i region",
+      "language": "Język",
+      "language_description": "Ustaw język interfejsu aplikacji.",
+      "select_language_placeholder": "Wybierz język"
+    },
+    "notifications": {
+      "title": "Powiadomienia",
+      "email_notifications": "Powiadomienia email",
+      "email_notifications_description": "Otrzymuj powiadomienia o ważnych zdarzeniach."
+    }
+  },
+  "offline_calculator": {
+    "title_demo": "StageCalc (Demo)",
+    "login_or_register": "Zaloguj się lub Zarejestruj",
+    "add_temp_device": "Dodaj tymczasowe urządzenie",
+    "device_name_placeholder": "np. LED PAR",
+    "quantity": "Ilość",
+    "add_to_list": "Dodaj do listy",
+    "device_list": "Lista urządzeń",
+    "connector": "Przyłącze",
+    "add_first_device": "Dodaj swoje pierwsze urządzenie, aby zacząć.",
+    "assign_placeholder": "Przypisz...",
+    "available_connectors": "Dostępne przyłącza",
+    "connector_type": "Typ przyłącza",
+    "select_type": "Wybierz typ...",
+    "connector_status": "Stan przyłączy",
+    "add_connector_to_monitor": "Dodaj przyłącze, aby monitorować obciążenie.",
+    "load_phase": "Obciążenie ({{phases}}-fazowe)",
+    "overload": "Przeciążenie",
+    "overload_by": "Przeciążenie o"
+  },
+  "feedback": {
+    "button_text": "Zgłoś uwagę",
+    "title": "Zgłoś uwagę lub sugestię",
+    "description": "Twoja opinia jest dla nas bardzo ważna. Pomoże nam ulepszyć aplikację.",
+    "email_subject": "Opinia o aplikacji StageCalc",
+    "message_label": "Twoja wiadomość",
+    "message_placeholder": "Opisz swój pomysł lub problem, który napotkałeś...",
+    "send_button": "Wyślij opinię",
+    "success_title": "Dziękujemy!",
+    "success_description": "Twoja opinia została pomyślnie wysłana.",
+    "error_description": "Wystąpił problem podczas wysyłania opinii. Spróbuj ponownie później.",
+    "validation": {
+        "message_min_length": "Wiadomość musi mieć co najmniej 10 znaków."
+    }
+  },
+  "categories": {
+    "lighting": "Oświetlenie",
+    "sound": "Dźwięk",
+    "multimedia": "Multimedia",
+    "cabling": "Okablowanie i dystrybucja",
+    "rigging": "Rigging",
+    "other": "Inne"
+  }
+}

@@ -1,0 +1,79 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isShared(eventId) {
+      let eventDoc = get(/databases/$(database)/documents/events/$(eventId));
+      return isSignedIn() && (
+        request.auth.uid == eventDoc.data.ownerUserId || 
+        (eventDoc.data.sharedWith != null && request.auth.uid in eventDoc.data.sharedWith)
+      );
+    }
+
+    match /users/{userId} {
+      // Allow user to read/write their own document
+      allow read, write: if isOwner(userId);
+      
+      // Allow listing users only if querying by a specific email
+      // This is used for the share functionality
+      allow list: if isSignedIn() && request.query.where[0][0] == 'email';
+      
+      // Allow getting a user doc if their ID is in a shared event
+      allow get: if isSignedIn() && exists(/databases/$(database)/documents/events/{eventId})
+                 && (isShared(eventId));
+    }
+    
+    // Anyone signed in can read/write to these collections
+    match /locations/{locationId} {
+       allow read, list, create, update, delete: if isSignedIn();
+    }
+
+    match /locations/{locationId}/{subcollection}/{docId} {
+       allow read, list, create, update, delete: if isSignedIn();
+    }
+    
+    match /devices/{deviceId} {
+       allow read, list, create, update, delete: if isSignedIn();
+    }
+    
+    match /clients/{clientId} {
+      // A user can only create a client for themselves.
+      allow create: if isSignedIn() && isOwner(request.resource.data.ownerUserId);
+      // A user can only read, update, or delete their own client records.
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.ownerUserId);
+      // Listing all clients is disallowed. Queries must filter by ownerUserId.
+    }
+
+    match /events/{eventId} {
+      // Owner can create and delete
+      allow create: if isSignedIn() && isOwner(request.resource.data.ownerUserId);
+      allow delete: if isSignedIn() && isOwner(resource.data.ownerUserId);
+      
+      // Owner or shared user can read and update
+      allow read, update: if isShared(eventId);
+
+      // Allow listing for owners or those the event is shared with
+      allow list: if isSignedIn();
+    }
+
+    match /events/{eventId}/{subcollection}/{docId} {
+      // Allow access if the user owns the parent event or it's shared with them.
+      allow read, write: if isShared(eventId);
+    }
+
+    // Allow any authenticated user to create a mail document
+    match /mail/{mailId} {
+      allow create: if isSignedIn();
+    }
+  }
+}

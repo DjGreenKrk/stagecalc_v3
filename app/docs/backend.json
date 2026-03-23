@@ -1,0 +1,678 @@
+
+{
+  "entities": {
+    "Calculation": {
+      "title": "Calculation",
+      "type": "object",
+      "description": "Represents a saved state of the power calculator.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the calculation."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user-defined name for the calculation."
+        },
+        "ownerUserId": {
+          "type": "string",
+          "description": "The user ID of the calculation's owner."
+        },
+        "lastModified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time the calculation was last saved."
+        },
+        "data": {
+          "type": "object",
+          "description": "A JSON blob containing the full state of the calculator, including groups, devices, connections, and truss calculations."
+        }
+      },
+      "required": ["id", "name", "ownerUserId", "lastModified", "data"]
+    },
+    "Truss": {
+      "title": "Truss",
+      "type": "object",
+      "description": "Represents a single truss structure calculation within a main Calculation.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "trussTypeId": { "type": "string", "description": "ID of the truss device from rigging catalog." },
+        "length": { "type": "number" },
+        "supportMode": { "type": "string", "enum": ["suspended", "supported"] },
+        "udlLimit": { "type": "number", "description": "User-defined Uniformly Distributed Load limit in kg/m." },
+        "pointLoadLimit": { "type": "number", "description": "User-defined Point Load limit in kg." },
+        "totalLoadLimit": { "type": "number", "description": "User-defined total load limit in kg." },
+        "loads": {
+          "type": "array",
+          "items": { "$ref": "#/entities/TrussLoad" }
+        }
+      },
+      "required": ["id", "name", "length"]
+    },
+    "TrussLoad": {
+      "title": "Truss Load",
+      "type": "object",
+      "description": "Represents a load applied to a truss.",
+      "properties": {
+        "id": { "type": "string" },
+        "calculationItemId": { "type": "string", "description": "ID of the item from the main calculator's groups." },
+        "manualName": { "type": "string", "description": "Name for a manually added load." },
+        "manualWeight": { "type": "number", "description": "Weight for a manually added load." },
+        "quantity": { "type": "number" },
+        "loadType": { "type": "string", "enum": ["point", "udl"] },
+        "position": { "type": "number", "description": "Position on the truss in meters for point loads." },
+        "riggingWeight": { "type": "number", "description": "Additional rigging weight for this load entry." }
+      },
+      "required": ["id", "quantity", "loadType"]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role (admin, technician, viewer)."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "role"
+      ]
+    },
+    "UserFavoriteDevices": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserFavoriteDevices",
+      "type": "object",
+      "description": "Stores a user's favorite devices.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user."
+        },
+        "deviceIds": {
+          "type": "array",
+          "description": "List of device IDs marked as favorite by the user.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["userId", "deviceIds"]
+    },
+    "Location": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Location",
+      "type": "object",
+      "description": "Represents a location.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the location."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the location."
+        },
+        "address": {
+          "type": "string",
+          "description": "The address of the location."
+        },
+        "capacity": {
+          "type": "number",
+          "description": "The capacity of the location in people."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the location."
+        },
+        "documents": {
+          "type": "array",
+          "description": "List of linked documents for the location.",
+          "items": {
+            "$ref": "#/entities/Document"
+          }
+        },
+        "contacts": {
+          "type": "array",
+          "description": "List of contacts for the location.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "phone": { "type": "string" },
+              "email": { "type": "string", "format": "email" },
+              "notes": { "type": "string" }
+            },
+            "required": ["id", "name"]
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "address"
+      ]
+    },
+    "Document": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Document",
+      "type": "object",
+      "description": "Represents a linked document.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the document link."
+        },
+        "name": {
+          "type": "string",
+          "description": "The display name of the document."
+        },
+        "url": {
+          "type": "string",
+          "description": "The URL of the document."
+        }
+      },
+      "required": ["id", "name", "url"]
+    },
+    "BaseDevice": {
+      "title": "Base Device",
+      "type": "object",
+      "description": "Base properties for all devices.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the device." },
+        "name": { "type": "string", "description": "The name of the device." },
+        "manufacturer": { "type": "string", "description": "The manufacturer of the device." },
+        "category": { "type": "string", "description": "The category of the device." },
+        "subcategory": { "type": "string", "description": "The subcategory of the device." },
+        "powerW": { "type": "number", "description": "The power consumption of the device in watts." },
+        "currentA": { "type": "number", "description": "The current consumption of the device in amps." },
+        "weightKg": { "type": "number", "description": "The weight of the device in kilograms." },
+        "ipRating": { "type": "string", "description": "The IP rating of the device." },
+        "notes": { "type": "string", "description": "Additional notes about the device." }
+      },
+      "required": ["id", "name", "manufacturer", "category", "powerW", "currentA", "weightKg"]
+    },
+    "LightingDevice": {
+      "title": "Lighting Device",
+      "type": "object",
+      "description": "Represents a lighting device.",
+      "allOf": [{ "$ref": "#/entities/BaseDevice" }],
+      "properties": {
+        "lightSourceType": { "type": "string", "description": "Type of light source (e.g., spot, wash, beam)." },
+        "bulbType": { "type": "string", "description": "Type of bulb used (e.g., HMI 575, MSR 700)." },
+        "controlProtocols": { "type": "array", "description": "List of control protocols.", "items": { "type": "string" } },
+        "dmxModes": { "type": "string", "description": "DMX modes footprint (e.g., 16/24/32)." },
+        "zoomRange": { "type": "string", "description": "Zoom range of the device (e.g., 10-40)." },
+        "colorSystem": { "type": "string", "description": "Color system (e.g., RGBW, CMY)." },
+        "cameraReady": { "type": "boolean", "description": "Indicates if the device is suitable for camera use." },
+        "riggingPoints": { "type": "number", "description": "Number of rigging points (hooks) required." }
+      }
+    },
+    "SoundDevice": {
+      "title": "Sound Device",
+      "type": "object",
+      "description": "Represents a sound device.",
+      "allOf": [{ "$ref": "#/entities/BaseDevice" }],
+      "properties": {
+        "spl": { "type": "number", "description": "The Sound Pressure Level in dB." },
+        "avgPowerW": { "type": "number", "description": "The average power consumption of the device in watts." },
+        "avgCurrentA": { "type": "number", "description": "The average current consumption of the device in amps." },
+        "powerType": { "type": "string", "description": "The power type of the sound device (e.g., active, passive).", "enum": ["active", "passive"] },
+        "protocols": { "type": "array", "description": "List of communication protocols supported by the device.", "items": { "type": "string" } },
+        "mountType": { "type": "array", "description": "The mounting types for the device (e.g., flyable, stack).", "items": { "type": "string" } },
+        "powerConnectorsIn": { "type": "array", "description": "List of power input connectors.", "items": { "type": "string" } }
+      }
+    },
+    "MultimediaDevice": { 
+      "title": "Multimedia Device",
+      "allOf": [{ "$ref": "#/entities/BaseDevice" }],
+      "properties": {
+        "technology": { "type": "string", "enum": ["DLP", "LCD", "LCoS"], "description": "Projector technology." },
+        "brightness": { "type": "number", "description": "Brightness in ANSI lumens for projectors or nits for displays." },
+        "nativeResolution": { "type": "string", "description": "Native resolution of the device." },
+        "throwRatio": { "type": "string", "description": "Projector throw ratio." },
+        "signalInputs": { "type": "array", "items": { "type": "string" }, "description": "List of signal inputs." },
+        "lensShift": { "type": "boolean" },
+        "interchangeableLenses": { "type": "boolean" },
+        "orientation": { "type": "array", "items": { "type": "string", "enum": ["front", "rear", "ceiling", "portrait", "landscape"] } },
+        "screenType": { "type": "string", "enum": ["ramowy", "elektryczny", "tripod", "fastfold"] },
+        "screenFormat": { "type": "string", "enum": ["16:9", "16:10", "4:3", "custom"] },
+        "screenSize": { "type": "string", "description": "Screen diagonal or dimensions." },
+        "screenGain": { "type": "number" },
+        "screenProjection": { "type": "string", "enum": ["front", "rear", "dual"] },
+        "vesa": { "type": "string" },
+        "pixelPitch": { "type": "number" },
+        "moduleResolution": { "type": "string" },
+        "ledPowerAvg": { "type": "number" },
+        "isIndoor": { "type": "boolean" },
+        "distributionType": { "type": "string", "enum": ["processor", "scaler", "switcher", "splitter", "converter"] },
+        "inputsOutputs": { "type": "string" },
+        "supportedResolutions": { "type": "string" },
+        "latency": { "type": "string" },
+        "maxModulesPerCircuit": { "type": "number", "description": "Max modules per electrical circuit." },
+        "maxModulesPerSignalPath": { "type": "number", "description": "Max modules per signal path." }
+      }
+    },
+    "CablingDevice": { 
+      "title": "Cabling and Distribution Device",
+      "allOf": [{ "$ref": "#/entities/BaseDevice" }],
+      "properties": {
+          "cableType": { "type": "string" },
+          "crossSection": { "type": "number" },
+          "conductorCount": { "type": "number" },
+          "distributionInput": { "type": "string" },
+          "distributionOutputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "quantity": { "type": "number" }
+              },
+              "required": ["type", "quantity"]
+            }
+          },
+          "mountType": { "type": "array", "items": { "type": "string" } },
+          "adapterIn": { "type": "string" },
+          "adapterOut": { "type": "string" },
+          "isThreePhase": { "type": "boolean" }
+      }
+    },
+    "RiggingDevice": {
+      "title": "Rigging Device",
+      "allOf": [{ "$ref": "#/entities/BaseDevice" }],
+      "properties": {
+        "subcategory": {
+          "type": "string",
+          "enum": ["trusses", "hoists", "hooks"]
+        }
+      },
+      "oneOf": [
+        {
+          "if": { "properties": { "subcategory": { "const": "trusses" } } },
+          "then": {
+            "properties": {
+              "trussType": { "type": "string", "enum": ["duo", "trio", "quatro"] },
+              "height": { "type": "number" },
+              "width": { "type": "number" },
+              "wallThickness": { "type": "number", "description": "Wall thickness of the truss tubing in mm." },
+              "loadChart": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "length": { "type": "number" },
+                    "pointLoad": { "type": "number" },
+                    "deflectionPointLoad": { "type": "number" },
+                    "distribLoad": { "type": "number" },
+                    "deflectionDistribLoad": { "type": "number" }
+                  },
+                  "required": ["id", "length", "pointLoad", "distribLoad"]
+                }
+              },
+              "weightChart": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "length": { "type": "number" },
+                    "weight": { "type": "number" }
+                  },
+                  "required": ["id", "length", "weight"]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "subcategory": { "const": "hoists" } } },
+          "then": {
+            "properties": {
+              "wll": { "type": "number", "description": "Working Load Limit in kg" },
+              "speed": { "type": "number", "description": "Lifting speed in m/min" },
+              "chainLength": { "type": "number", "description": "Chain length in meters" },
+              "controlType": { "type": "string", "enum": ["D8", "D8+", "C1"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "subcategory": { "const": "hooks" } } },
+          "then": {
+            "properties": {
+              "wll": { "type": "number", "description": "Working Load Limit in kg" },
+              "clampDiameterRange": { "type": "string", "description": "The diameter range of the clamp, e.g., '48-51mm'." }
+            }
+          }
+        }
+      ]
+    },
+    "OtherDevice": { 
+      "title": "Other Device",
+      "allOf": [{ "$ref": "#/entities/BaseDevice" }] 
+    },
+    "PowerConnector": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PowerConnector",
+      "type": "object",
+      "description": "Represents a power connector at a location.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the power connector."
+        },
+        "locationId": {
+          "type": "string",
+          "description": "Reference to Location. (Relationship: Location 1:N PowerConnector). The location ID where the power connector is located."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of the power connector (16A, 32A, 63A, 125A)."
+        },
+        "phases": {
+          "type": "number",
+          "description": "The number of phases (1 or 3)."
+        },
+        "maxCurrentA": {
+          "type": "number",
+          "description": "The maximum current of the power connector in amps."
+        }
+      },
+      "required": [
+        "id",
+        "locationId",
+        "type",
+        "phases",
+        "maxCurrentA"
+      ]
+    },
+    "Client": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Client",
+      "type": "object",
+      "description": "Represents a client or customer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the client."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the client (company or individual)."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "The primary contact person for the client."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The contact email address for the client."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The contact phone number for the client."
+        },
+        "address": {
+          "type": "string",
+          "description": "The address of the client."
+        },
+        "nip": {
+          "type": "string",
+          "description": "The client's Tax Identification Number (NIP)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the client."
+        },
+        "ownerUserId": {
+          "type": "string",
+          "description": "The user ID of the client's owner."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "ownerUserId"
+      ]
+    },
+    "Mail": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Mail",
+      "type": "object",
+      "description": "Represents an email to be sent by the Trigger Email extension.",
+      "properties": {
+        "to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "message": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string"
+            },
+            "html": {
+              "type": "string"
+            }
+          },
+          "required": ["subject", "html"]
+        }
+      },
+      "required": ["to", "message"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/calculations/{calculationId}",
+        "definition": {
+          "entityName": "Calculation",
+          "schema": {
+            "$ref": "#/entities/Calculation"
+          },
+          "description": "Stores saved calculator states."
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/entities/User"
+          },
+          "description": "Stores user profiles. Accessible only by the user themselves.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/userFavorites/{userId}",
+        "definition": {
+          "entityName": "UserFavoriteDevices",
+          "schema": {
+            "$ref": "#/entities/UserFavoriteDevices"
+          },
+          "description": "Stores a user's favorite devices. The document ID is the user's ID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/locations/{locationId}",
+        "definition": {
+          "entityName": "Location",
+          "schema": {
+            "$ref": "#/entities/Location"
+          },
+          "description": "Stores location information.",
+          "params": [
+            {
+              "name": "locationId",
+              "description": "The unique identifier of the location."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/clients/{clientId}",
+        "definition": {
+          "entityName": "Client",
+          "schema": {
+            "$ref": "#/entities/Client"
+          },
+          "description": "Stores client information.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the client."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/lighting_devices/{deviceId}",
+        "definition": {
+          "entityName": "LightingDevice",
+          "schema": { "$ref": "#/entities/LightingDevice" },
+          "description": "Stores lighting devices.",
+          "params": [{ "name": "deviceId", "description": "The unique identifier of the lighting device." }]
+        }
+      },
+      {
+        "path": "/sound_devices/{deviceId}",
+        "definition": {
+          "entityName": "SoundDevice",
+          "schema": { "$ref": "#/entities/SoundDevice" },
+          "description": "Stores sound devices.",
+          "params": [{ "name": "deviceId", "description": "The unique identifier of the sound device." }]
+        }
+      },
+      {
+        "path": "/multimedia_devices/{deviceId}",
+        "definition": {
+          "entityName": "MultimediaDevice",
+          "schema": { "$ref": "#/entities/MultimediaDevice" },
+          "description": "Stores multimedia devices.",
+          "params": [{ "name": "deviceId", "description": "The unique identifier of the multimedia device." }]
+        }
+      },
+      {
+        "path": "/cabling_devices/{deviceId}",
+        "definition": {
+          "entityName": "CablingDevice",
+          "schema": { "$ref": "#/entities/CablingDevice" },
+          "description": "Stores cabling and distribution devices.",
+          "params": [{ "name": "deviceId", "description": "The unique identifier of the cabling device." }]
+        }
+      },
+      {
+        "path": "/rigging_devices/{deviceId}",
+        "definition": {
+          "entityName": "RiggingDevice",
+          "schema": { "$ref": "#/entities/RiggingDevice" },
+          "description": "Stores rigging devices.",
+          "params": [{ "name": "deviceId", "description": "The unique identifier of the rigging device." }]
+        }
+      },
+      {
+        "path": "/other_devices/{deviceId}",
+        "definition": {
+          "entityName": "OtherDevice",
+          "schema": { "$ref": "#/entities/OtherDevice" },
+          "description": "Stores other devices.",
+          "params": [{ "name": "deviceId", "description": "The unique identifier of the other device." }]
+        }
+      },
+      {
+        "path": "/locations/{locationId}/powerConnectors/{powerConnectorId}",
+        "definition": {
+          "entityName": "PowerConnector",
+          "schema": {
+            "$ref": "#/entities/PowerConnector"
+          },
+          "description": "Stores power connectors at a location.",
+          "params": [
+            {
+              "name": "locationId",
+              "description": "The unique identifier of the location."
+            },
+            {
+              "name": "powerConnectorId",
+              "description": "The unique identifier of the power connector."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "role",
+          "schema": {
+            "$ref": "#/entities/User"
+          },
+          "description": "Collection to store admin roles. Presence of a document indicates admin status.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/mail/{mailId}",
+        "definition": {
+          "entityName": "Mail",
+          "schema": {
+            "$ref": "#/entities/Mail"
+          },
+          "description": "Triggers the Trigger Email extension to send an email.",
+          "params": [
+            {
+              "name": "mailId",
+              "description": "The unique identifier of the email record."
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

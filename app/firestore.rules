@@ -1,0 +1,52 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    match /calculations/{calculationId} {
+      allow create: if isSignedIn() && isOwner(request.resource.data.ownerUserId);
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.ownerUserId);
+      allow list: if isSignedIn() && request.query.where[0][2] == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read, write, update: if isOwner(userId);
+    }
+    
+    match /userFavorites/{userId} {
+      allow read, write, update, create: if isOwner(userId);
+    }
+    
+    match /locations/{locationId} {
+       allow read, list, create, update, delete: if isSignedIn();
+    }
+
+    match /locations/{locationId}/{subcollection}/{docId} {
+       allow read, list, create, update, delete: if isSignedIn();
+    }
+    
+    match /lighting_devices/{deviceId} { allow read, list, create, update, delete: if isSignedIn(); }
+    match /sound_devices/{deviceId} { allow read, list, create, update, delete: if isSignedIn(); }
+    match /multimedia_devices/{deviceId} { allow read, list, create, update, delete: if isSignedIn(); }
+    match /cabling_devices/{deviceId} { allow read, list, create, update, delete: if isSignedIn(); }
+    match /rigging_devices/{deviceId} { allow read, list, create, update, delete: if isSignedIn(); }
+    match /other_devices/{deviceId} { allow read, list, create, update, delete: if isSignedIn(); }
+    
+    match /clients/{clientId} {
+      allow create: if isSignedIn() && isOwner(request.resource.data.ownerUserId);
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.ownerUserId);
+    }
+
+    match /mail/{mailId} {
+      allow create: if isSignedIn();
+    }
+  }
+}

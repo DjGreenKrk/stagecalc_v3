@@ -1,0 +1,113 @@
+
+"""
+Represents a user in the system.
+"""
+type User @table(name: "users") {
+  id: ID!
+  name: String
+  email: String
+  role: String
+}
+
+"""
+Represents an event.
+"""
+type Event @table(name: "events") {
+  id: ID!
+  name: String!
+  date: Timestamp!
+  description: String!
+  ownerUserId: String!
+  sharedWith: [String]
+  documents: [Document]
+  eventDevices: [EventDevice] @relation(collection: "eventDevices")
+}
+
+"""
+Represents a location.
+"""
+type Location @table(name: "locations") {
+  id: ID!
+  name: String!
+  address: String!
+  capacity: Int
+  notes: String
+  documents: [Document]
+  caretakerName: String
+  caretakerPhone: String
+  powerConnectors: [PowerConnector] @relation(collection: "powerConnectors")
+}
+
+"""
+Represents a linked document.
+"""
+type Document {
+  id: ID!
+  name: String!
+  url: String!
+}
+
+"""
+Represents a device catalog entry.
+"""
+type Device @table(name: "devices") {
+  id: ID!
+  name: String!
+  manufacturer: String!
+  powerW: Float!
+  currentA: Float!
+  weightKg: Float!
+  ipRating: String
+  lightSource: String
+  notes: String
+  isFavorite: Boolean
+}
+
+"""
+Represents a device assigned to an event.
+"""
+type EventDevice {
+  id: ID!
+  eventId: String!
+  deviceId: String!
+  quantity: Int!
+  calculatedTotalPowerW: Float
+  calculatedTotalCurrentA: Float
+  calculatedTotalWeightKg: Float
+}
+
+"""
+Represents a power connector at a location.
+"""
+type PowerConnector {
+  id: ID!
+  locationId: String!
+  type: String!
+  phases: Int!
+  maxCurrentA: Int!
+}
+
+"""
+Represents the assignment of an event device to a power connector.
+"""
+type Assignment {
+  id: ID!
+  eventDeviceId: String!
+  powerConnectorId: String!
+  phase: String!
+}
+
+"""
+Represents a client or customer.
+"""
+type Client @table(name: "clients") {
+  id: ID!
+  name: String!
+  contactPerson: String
+  email: String!
+  phone: String
+  address: String
+  nip: String
+  notes: String
+  ownerUserId: String!
+}

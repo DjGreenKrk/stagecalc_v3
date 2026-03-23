@@ -1,0 +1,271 @@
+
+{
+  "common": {
+    "loading": "Loading...",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "save_changes": "Save changes",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "are_you_sure": "Are you sure?",
+    "open_menu": "Open menu",
+    "notes": "Notes",
+    "or": "OR",
+    "export": "Export",
+    "calculating": "Calculating...",
+    "recalculate": "Recalculate",
+    "more_options": "More options",
+    "loading_data": "Loading data...",
+    "phase": "phase",
+    "phases": "phases",
+    "none": "None",
+    "password": "Password",
+    "add": "Add",
+    "error": "Error",
+    "files": "Files"
+  },
+  "nav": {
+    "devices": "Devices",
+    "locations": "Locations",
+    "clients": "Clients",
+    "settings": "Settings",
+    "quick_calculator": "Quick Calculator",
+    "trusses": "Truss Loads"
+  },
+  "user_nav": {
+    "user_avatar_alt": "User avatar",
+    "user": "User",
+    "profile": "Profile",
+    "settings": "Settings",
+    "log_out": "Log out"
+  },
+  "login": {
+    "welcome_back": "Welcome back",
+    "create_account": "Create account",
+    "log_in_to_manage_events": "Log in to manage your events.",
+    "enter_details_to_register": "Enter your details to register.",
+    "log_in": "Log in",
+    "sign_up": "Sign up",
+    "already_have_account": "Already have an account?",
+    "dont_have_account": "Don't have an account yet?",
+    "try_demo": "Try StageCalc Demo",
+    "forgot_password": "Forgot password?",
+    "errors": {
+      "default_title": "An error occurred",
+      "default_description": "Please try again later.",
+      "invalid_credentials_title": "Invalid credentials",
+      "invalid_credentials_description": "Check your email and password.",
+      "invalid_email_title": "Invalid email",
+      "invalid_email_description": "Please enter a valid email address.",
+      "email_in_use_title": "Email already in use",
+      "email_in_use_description": "Use a different email address or log in.",
+      "weak_password_title": "Password is too weak",
+      "weak_password_description": "Password should be at least 6 characters.",
+      "popup_closed_title": "Login canceled",
+      "popup_closed_description": "Google login window was closed.",
+      "email_required_title": "Email is required",
+      "email_required_description": "Please enter your email to reset your password."
+    },
+    "reset": {
+      "success_title": "Check your email",
+      "success_description": "A password reset link has been sent to your email address."
+    }
+  },
+  "summary": {
+    "power": "Total Power",
+    "current": "Total Current",
+    "weight": "Total Weight"
+  },
+  "devices": {
+    "title": "Device Catalog",
+    "add_device": "Add Device",
+    "edit_device": "Edit Device",
+    "delete_warning_description": "This action cannot be undone. This will permanently delete the device \"{{deviceName}}\".",
+    "name_placeholder": "e.g., LED Par 64",
+    "manufacturer_placeholder": "e.g., ShowTec",
+    "ip_rating": "IP Rating",
+    "light_source": "Light Source",
+    "notes_placeholder": "Additional notes...",
+    "search_placeholder": "Search by name or manufacturer...",
+    "favorites": "Favorites",
+    "add_to_favorites": "Add to favorites",
+    "add_to_favorites_desc": "Favorite devices will appear at the top of the list.",
+    "no_devices_found": "No devices found",
+    "table": {
+      "name": "Name",
+      "manufacturer": "Manufacturer",
+      "power": "Power (W)",
+      "current": "Current (A)",
+      "weight": "Weight (kg)"
+    },
+    "validation": {
+      "name_required": "Name is required.",
+      "manufacturer_required": "Manufacturer is required.",
+      "power_positive": "Power must be a positive number.",
+      "current_positive": "Current must be a positive number.",
+      "weight_positive": "Weight must be a positive number."
+    },
+    "rigging_points": "Rigging Points (hooks)",
+    "subcategories": {
+        "moving_heads": "Moving Heads",
+        "static_lighting": "Static Lighting",
+        "controllers": "Controllers & Signal Distribution",
+        "smoke_generators": "Smoke Generators",
+        "speakers": "Speakers",
+        "amplifiers": "Amplifiers",
+        "sound_controllers": "Controllers & Signal Distribution",
+        "projectors": "Projectors",
+        "projection_screens": "Projection Screens",
+        "led_screens": "LED Screens",
+        "tvs": "TVs",
+        "signal_distribution": "Signal Distribution & Control",
+        "power_cables": "Power Cables",
+        "distribution_boxes": "Distribution Boxes",
+        "adapters": "Adapters & Reducers",
+        "trusses": "Trusses",
+        "hoists": "Hoists",
+        "hooks": "Hooks & Slings"
+    }
+  },
+  "locations": {
+    "title": "Locations",
+    "add_location": "Add Location",
+    "edit_location": "Edit Location",
+    "delete_warning_description": "This action cannot be undone. This will permanently delete the location \"{{locationName}}\".",
+    "name_placeholder": "Main Stage",
+    "address_placeholder": "123 Music St, 00-001 Warsaw, Poland",
+    "capacity_people": "Capacity (people)",
+    "notes_placeholder": "Additional information about the location...",
+    "power_connectors": "Power Connectors",
+    "type_placeholder": "Type",
+    "quantity": "Quantity",
+    "connector_notes_placeholder": "Notes (e.g., behind the stage)",
+    "total_available_power": "Total Available Power",
+    "capacity": "Capacity",
+    "people": "people",
+    "pieces": "pcs.",
+    "table": {
+      "name": "Name",
+      "address": "Address",
+      "max_power": "Max. Power"
+    },
+    "validation": {
+      "name_required": "Name is required.",
+      "address_required": "Address is required."
+    }
+  },
+  "clients": {
+    "title": "Clients",
+    "add_client": "Add Client",
+    "edit_client": "Edit Client",
+    "update_client_details": "Update client's details.",
+    "enter_client_details": "Enter data to add a new client.",
+    "client_name": "Client Name",
+    "client_name_placeholder": "Company name or Full Name",
+    "contact_person": "Contact Person",
+    "phone": "Phone",
+    "notes_placeholder": "Additional information, e.g., preferences...",
+    "no_clients_found": "No clients found",
+    "add_first_client": "Add your first client to get started.",
+    "delete_warning_description": "This action cannot be undone. This will permanently delete the client \"{{clientName}}\".",
+    "search_placeholder": "Search by name, contact, NIP...",
+    "try_different_query": "Try a different search query.",
+    "table": {
+      "name": "Client Name",
+      "contact": "Contact",
+      "email": "Email",
+      "address": "Address"
+    },
+    "validation": {
+      "name_required": "Client name is required.",
+      "invalid_email": "Invalid email address."
+    }
+  },
+  "profile": {
+    "title": "Your Profile",
+    "description": "Manage your account details and settings.",
+    "no_name": "No Name",
+    "display_name": "Display Name",
+    "photo_url": "Profile Photo URL",
+    "reset_password": "Reset Password",
+    "update_success_title": "Success!",
+    "update_success_description": "Your profile has been updated.",
+    "update_error_description": "Failed to update profile. {{message}}",
+    "reset_password_no_email": "No email address to send reset link to.",
+    "reset_password_email_sent_title": "Email Sent",
+    "reset_password_email_sent_description": "Check your inbox to reset your password.",
+     "validation": {
+        "display_name_required": "Display name is required.",
+        "invalid_photo_url": "Invalid image URL."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage application settings and preferences.",
+    "appearance": {
+      "title": "Appearance",
+      "theme": "Theme",
+      "theme_description": "Choose a light or dark theme.",
+      "select_theme_placeholder": "Select a theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "language": {
+      "title": "Language & Region",
+      "language": "Language",
+      "language_description": "Set the application interface language.",
+      "select_language_placeholder": "Select language"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "email_notifications": "Email Notifications",
+      "email_notifications_description": "Receive notifications about important events."
+    }
+  },
+  "offline_calculator": {
+    "title_demo": "StageCalc (Demo)",
+    "login_or_register": "Log In or Register",
+    "add_temp_device": "Add Temporary Device",
+    "device_name_placeholder": "e.g. LED PAR",
+    "quantity": "Quantity",
+    "add_to_list": "Add to list",
+    "device_list": "Device List",
+    "connector": "Connector",
+    "add_first_device": "Add your first device to get started.",
+    "assign_placeholder": "Assign...",
+    "available_connectors": "Available Connectors",
+    "connector_type": "Connector Type",
+    "select_type": "Select type...",
+    "connector_status": "Connectors Status",
+    "add_connector_to_monitor": "Add a connector to monitor load.",
+    "load_phase": "Load ({{phases}}-phase)",
+    "overload": "Overload",
+    "overload_by": "Overload by"
+  },
+  "feedback": {
+    "button_text": "Submit Feedback",
+    "title": "Submit Feedback or Suggestion",
+    "description": "Your feedback is very important to us. It helps us improve the application.",
+    "email_subject": "Feedback about StageCalc App",
+    "message_label": "Your message",
+    "message_placeholder": "Describe your idea or the issue you've encountered...",
+    "send_button": "Send Feedback",
+    "success_title": "Thank You!",
+    "success_description": "Your feedback has been sent successfully.",
+    "error_description": "There was a problem sending your feedback. Please try again later.",
+    "validation": {
+        "message_min_length": "Message must be at least 10 characters long."
+    }
+  },
+  "categories": {
+    "lighting": "Lighting",
+    "sound": "Sound",
+    "multimedia": "Multimedia",
+    "cabling": "Cabling & Distribution",
+    "rigging": "Rigging",
+    "other": "Other"
+  }
+}
