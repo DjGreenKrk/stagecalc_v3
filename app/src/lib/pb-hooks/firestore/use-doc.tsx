@@ -67,10 +67,19 @@ export function useDoc<T = any>(
       } else {
         setData(e.record as unknown as StateDataType);
       }
-    }, options);
+    }, options).catch(err => {
+        if (err.status === 404) {
+             console.warn(`useDoc subscribe: Collection "${collectionName}" or record "${id}" not found.`);
+        } else {
+            console.error(`useDoc subscribe error (${collectionName}/${id}):`, err);
+        }
+        return () => {};
+    });
 
     return () => {
-      unsubscribePromise.then(unsubscribe => unsubscribe());
+      unsubscribePromise.then(unsubscribe => {
+          if (typeof unsubscribe === 'function') unsubscribe();
+      });
     };
   }, [collectionName, id, JSON.stringify(options)]);
 

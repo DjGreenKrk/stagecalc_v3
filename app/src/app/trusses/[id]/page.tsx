@@ -1,7 +1,7 @@
 'use client';
 
 import { AppShell } from '@/components/app-shell';
-import { useUser, useDoc } from '@/firebase';
+import { useUser, useDoc } from '@/lib/pb-hooks';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { useTranslation } from '@/context/language-context';

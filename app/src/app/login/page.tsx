@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Calculator, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/pb-provider';
-import { pb } from '@/firebase';
+import { pb } from '@/lib/pb-hooks';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';

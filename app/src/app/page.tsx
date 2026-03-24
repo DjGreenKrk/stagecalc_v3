@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser } from '@/lib/pb-hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useTranslation } from '@/context/language-context';

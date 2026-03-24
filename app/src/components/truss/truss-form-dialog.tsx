@@ -1,4 +1,5 @@
 'use client';
+import { generateId } from '@/lib/utils';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -68,7 +69,7 @@ export function TrussFormDialog({ open, onOpenChange, onSave, truss, riggingDevi
   
   const onSubmit = (values: z.infer<typeof trussFormSchema>) => {
     const dataToSave: Truss = {
-      id: truss?.id || crypto.randomUUID(),
+      id: truss?.id || generateId(),
       loads: truss?.loads || [],
       ...values,
     };

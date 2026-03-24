@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import type { Calculation, Device, Truss, TrussLoadChartEntry, CalculationGroup, TrussLoad, CalculationItem } from '@/lib/definitions';
-import { useUser, useCollection } from '@/firebase';
+import { useUser, useCollection } from '@/lib/pb-hooks';
 import { pb } from '@/lib/pocketbase';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2, Edit, AlertTriangle, HardDrive } from 'lucide-react';
@@ -141,8 +141,16 @@ export function TrussCalculator({ calculation }: TrussCalculatorProps) {
       try {
         const allDevices: Device[] = [];
         for (const cat of deviceCategories) {
-          const records = await pb.collection(cat.collectionName).getFullList<Device>();
-          allDevices.push(...records.map(r => ({ ...r, category: cat.name })));
+          try {
+            const records = await pb.collection(cat.collectionName).getFullList<Device>();
+            allDevices.push(...records.map(r => ({ ...r, category: cat.name })));
+          } catch (err: any) {
+            if (err.status === 404) {
+              console.warn(`Collection ${cat.collectionName} not found requested by truss-calculator.`);
+            } else {
+              throw err;
+            }
+          }
         }
         setDeviceCatalog(allDevices);
       } catch (error) {

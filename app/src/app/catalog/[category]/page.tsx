@@ -43,12 +43,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useCollection, useUser } from '@/firebase';
+import { useCollection, useUser } from '@/lib/pb-hooks';
 import {
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
   updateDocumentNonBlocking
-} from '@/firebase/non-blocking-updates';
+} from '@/lib/pb-hooks/non-blocking-updates';
 import { pb } from '@/lib/pocketbase';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslation } from '@/context/language-context';
@@ -99,7 +99,7 @@ export default function CategoryPage() {
   const params = useParams();
   const categorySlug = params.category as string;
 
-  const categoryInfo = useMemo(() => deviceCategories.find(c => c.slug === categorySlug), [categorySlug]);
+  const categoryInfo = useMemo(() => deviceCategories.find((d: any) => d.slug === categorySlug), [categorySlug]);
 
   const [selectedDevice, setSelectedDevice] = useState<Device | undefined>(undefined);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -120,7 +120,7 @@ export default function CategoryPage() {
 
   const allDevices = useMemo(() => {
     if (!rawDevices || !categoryInfo) return [];
-    return rawDevices.map(d => ({ ...d, category: categoryInfo.name as DeviceCategoryName }));
+    return rawDevices.map((d: Device) => ({ ...d, category: categoryInfo.name as DeviceCategoryName }));
   }, [rawDevices, categoryInfo]);
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function CategoryPage() {
     const isFavorite = (deviceId: string) => favoriteDeviceIds.has(deviceId);
 
     return allDevices
-      .filter(device => {
+      .filter((device: Device) => {
         if (showFavoritesOnly && !isFavorite(device.id)) return false;
         if (activeSubcategory && device.subcategory !== activeSubcategory) return false;
 
@@ -177,7 +177,7 @@ export default function CategoryPage() {
         }
         return true;
       })
-      .sort((a, b) => {
+      .sort((a: Device, b: Device) => {
         const aIsFav = isFavorite(a.id);
         const bIsFav = isFavorite(b.id);
         if (aIsFav && !bIsFav) return -1;
@@ -266,10 +266,12 @@ export default function CategoryPage() {
   };
 
   const handleSave = (deviceDataWithId: Omit<Device, 'category'> & { id?: string }) => {
+    console.log("[Debug] handleSave data received:", deviceDataWithId);
     const { id, ...deviceData } = deviceDataWithId;
     if (id) {
       updateDocumentNonBlocking(categoryInfo.collectionName, id, deviceData);
     } else {
+      console.log("[Debug] Adding new document to:", categoryInfo.collectionName);
       addDocumentNonBlocking(categoryInfo.collectionName, deviceData);
     }
     setIsFormOpen(false);
@@ -377,7 +379,7 @@ export default function CategoryPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {!areDevicesLoading && paginatedDevices.length > 0 && paginatedDevices.map((device) => {
+              {!areDevicesLoading && paginatedDevices.length > 0 && paginatedDevices.map((device: Device) => {
                 const isFavorite = favoriteDeviceIds.has(device.id);
                 return (
                   <TableRow key={device.id}>

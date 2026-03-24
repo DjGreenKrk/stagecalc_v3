@@ -23,10 +23,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useCollection, useUser } from '@/firebase';
+import { useCollection, useUser } from '@/lib/pb-hooks';
 import type { Calculation } from '@/lib/definitions';
 import { useTranslation } from '@/context/language-context';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { deleteDocumentNonBlocking } from '@/lib/pb-hooks/non-blocking-updates';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function TrussesPage() {

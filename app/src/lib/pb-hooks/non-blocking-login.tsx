@@ -25,8 +25,8 @@ export function initiateEmailSignUp(email: string, password: string, additionalD
     });
 }
 
-/** Placeholder for anonymous sign-in if needed, though PB doesn't have it natively like Firebase. */
+/** Placeholder for anonymous sign-in if needed, though PB doesn't have it natively. */
 export function initiateAnonymousSignIn(): void {
+  // Legacy Firebase code has been removed.
   console.warn("PocketBase does not support anonymous sign-in natively. Consider using a guest account or skipping auth.");
 }
-

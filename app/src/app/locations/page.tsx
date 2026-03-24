@@ -23,8 +23,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LocationForm } from '@/components/location/location-form';
-import { useCollection, useUser } from '@/firebase';
-import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useCollection, useUser } from '@/lib/pb-hooks';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/lib/pb-hooks/non-blocking-updates';
 import { LocationDetailsDialog } from '@/components/location/location-details-dialog';
 import {
   AlertDialog,
@@ -42,7 +42,7 @@ import { Input } from '@/components/ui/input';
 
 const ITEMS_PER_PAGE = 25;
 
-export function LocationsPage() {
+export default function LocationsPage() {
   const { t, language } = useTranslation();
   const { user, isUserLoading } = useUser();
   const router = useRouter();

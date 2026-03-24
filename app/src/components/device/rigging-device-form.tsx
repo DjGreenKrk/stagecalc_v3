@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -25,13 +24,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Device, DeviceCategory } from '@/lib/definitions';
 import { useTranslation } from '@/context/language-context';
+import { generateId } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../ui/table';
 
 const loadChartEntrySchema = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
+  id: z.string().default(() => generateId()),
   length: z.coerce.number().min(0),
   pointLoad: z.coerce.number().min(0),
   deflectionPointLoad: z.coerce.number().optional(),
@@ -40,7 +40,7 @@ const loadChartEntrySchema = z.object({
 });
 
 const weightChartEntrySchema = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
+  id: z.string().default(() => generateId()),
   length: z.coerce.number().min(0),
   weight: z.coerce.number().min(0),
 });
@@ -183,7 +183,7 @@ export function RiggingDeviceForm({
             </TableBody>
           </Table>
         </div>
-        <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => appendWeightChart({ id: crypto.randomUUID(), length: 0, weight: 0 })}>
+        <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => appendWeightChart({ id: generateId(), length: 0, weight: 0 })}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Dodaj wagę dla długości
         </Button>
@@ -217,7 +217,7 @@ export function RiggingDeviceForm({
             </TableBody>
           </Table>
         </div>
-        <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => appendLoadChart({ id: crypto.randomUUID(), length: 0, pointLoad: 0, distribLoad: 0, deflectionPointLoad: 0, deflectionDistribLoad: 0 })}>
+        <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => appendLoadChart({ id: generateId(), length: 0, pointLoad: 0, distribLoad: 0, deflectionPointLoad: 0, deflectionDistribLoad: 0 })}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Dodaj punkt z tabeli
         </Button>

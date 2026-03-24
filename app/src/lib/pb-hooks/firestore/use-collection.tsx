@@ -54,26 +54,40 @@ export function useCollection<T = any>(
         setIsLoading(false);
       })
       .catch((err) => {
-        console.error(`useCollection error (${collectionName}):`, err);
-        setError(err);
+        if (err.status === 404) {
+          console.warn(`useCollection: Collection "${collectionName}" not found.`);
+          setData([]);
+        } else {
+          console.error(`useCollection error (${collectionName}):`, err);
+          setError(err);
+        }
         setIsLoading(false);
       });
 
     // Real-time subscription
     const unsubscribePromise = pb.collection(collectionName).subscribe('*', (e) => {
-      // Refresh the whole list on any change for simplicity, 
-      // or we could optimistically update the state.
-      // For now, let's just refetch to ensure correctness with filters/sort.
       pb.collection(collectionName).getFullList<RecordModel>(options)
         .then((records) => {
           startTransition(() => {
             setData(records as unknown as ResultItemType[]);
           });
+        })
+        .catch(err => {
+          if (err.status !== 404) console.error("Subscription refetch error:", err);
         });
-    }, options);
+    }, options).catch(err => {
+        if (err.status === 404) {
+            console.warn(`useCollection subscribe: Collection "${collectionName}" not found for real-time updates.`);
+        } else {
+            console.error(`useCollection subscribe error (${collectionName}):`, err);
+        }
+        return () => {}; // Return dummy unsubscribe
+    });
 
     return () => {
-      unsubscribePromise.then(unsubscribe => unsubscribe());
+      unsubscribePromise.then(unsubscribe => {
+          if (typeof unsubscribe === 'function') unsubscribe();
+      });
     };
   }, [collectionName, JSON.stringify(options)]);
 

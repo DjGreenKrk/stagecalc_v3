@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser } from '@/lib/pb-hooks';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/context/language-context';
 

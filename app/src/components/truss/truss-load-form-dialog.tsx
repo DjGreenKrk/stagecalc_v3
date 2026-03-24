@@ -27,7 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, generateId } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 
 const formSchema = z.object({
@@ -125,7 +125,7 @@ export function TrussLoadFormDialog({ open, onOpenChange, onSave, load, trussLen
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     let dataToSave: Partial<TrussLoad> = {
-      id: load?.id || crypto.randomUUID(),
+      id: load?.id || generateId(),
       quantity: values.quantity,
       loadType: values.loadType,
       position: values.loadType === 'point' ? values.position || 0 : 0,

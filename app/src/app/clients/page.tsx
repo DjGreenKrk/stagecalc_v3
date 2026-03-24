@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 import { pb } from '@/lib/pocketbase';
-import { useCollection, useUser } from '@/firebase';
+import { useCollection, useUser } from '@/lib/pb-hooks';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from '@/context/language-context';
 import { Input } from '@/components/ui/input';

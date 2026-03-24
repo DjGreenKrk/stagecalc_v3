@@ -151,7 +151,9 @@ export function LightingDeviceForm({
   }, [device, open, reset]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    console.log("[Debug] LightingDeviceForm onSubmit values:", values);
     const dataToSave = { ...values, id: device?.id };
+    console.log("[Debug] LightingDeviceForm calling onSave with:", dataToSave);
     onSave(dataToSave as any);
     onOpenChange(false);
   };

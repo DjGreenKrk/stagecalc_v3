@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -34,13 +33,14 @@ import {
 import { Textarea } from '../ui/textarea';
 import { SummaryCard } from '../event/summary-card';
 import { useTranslation } from '@/context/language-context';
+import { generateId } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ConnectorTypes, connectorTypeConfig } from '@/lib/definitions';
 
 const contactSchema = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
+  id: z.string().default(() => generateId()),
   name: z.string().min(1, 'Imię i nazwisko jest wymagane.'),
   phone: z.string().optional(),
   email: z.string().email('Nieprawidłowy adres e-mail.').optional().or(z.literal('')),
@@ -48,7 +48,7 @@ const contactSchema = z.object({
 });
 
 const powerConnectorSchema = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
+  id: z.string().default(() => generateId()),
   type: z.enum([
     '16A Uni-Schuko',
     '16A CEE 3P',
@@ -66,13 +66,13 @@ const powerConnectorSchema = z.object({
 });
 
 const powerConnectorGroupSchema = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
+  id: z.string().default(() => generateId()),
   name: z.string().min(1, 'Nazwa grupy jest wymagana.'),
   connectors: z.array(powerConnectorSchema).optional(),
 })
 
 const documentSchema = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
+  id: z.string().default(() => generateId()),
   name: z.string().min(1, 'Nazwa pliku jest wymagana.'),
   url: z.string().url('Nieprawidłowy adres URL.'),
 });
@@ -169,7 +169,7 @@ export function LocationForm({
   }, [watchedGroups]);
 
   const handleAddGroup = () => {
-    const newGroupId = crypto.randomUUID();
+    const newGroupId = generateId();
     appendGroup({
       id: newGroupId,
       name: `Nowa grupa ${groupFields.length + 1}`,
@@ -186,7 +186,7 @@ export function LocationForm({
     const config = connectorTypeConfig[newType];
 
     const newConnectors = [...(group.connectors || []), {
-      id: crypto.randomUUID(),
+      id: generateId(),
       type: newType as PowerConnector['type'],
       phases: config.phases as 1 | 3,
       maxCurrentA: config.maxCurrentA,
@@ -220,11 +220,11 @@ export function LocationForm({
   }
 
   const handleAddDocument = () => {
-    appendDocument({ id: crypto.randomUUID(), name: '', url: '' });
+    appendDocument({ id: generateId(), name: '', url: '' });
   };
 
   const handleAddContact = () => {
-    appendContact({ id: crypto.randomUUID(), name: '', phone: '', email: '', notes: '' });
+    appendContact({ id: generateId(), name: '', phone: '', email: '', notes: '' });
   };
 
   const handleAttemptClose = () => {
@@ -246,9 +246,9 @@ export function LocationForm({
         let groups = location.powerConnectorGroups || [];
         if (location.powerConnectors && location.powerConnectors.length > 0 && groups.length === 0) {
           groups = [{
-            id: crypto.randomUUID(),
+            id: generateId(),
             name: 'Domyślne przyłącza',
-            connectors: location.powerConnectors.map(c => ({ ...c, id: c.id || crypto.randomUUID(), type: c.type || '16A Uni-Schuko' }))
+            connectors: location.powerConnectors.map(c => ({ ...c, id: c.id || generateId(), type: c.type || '16A Uni-Schuko' }))
           }];
         }
 
@@ -258,11 +258,11 @@ export function LocationForm({
           notes: location.notes ?? '',
           powerConnectorGroups: groups.map(g => ({
             ...g,
-            id: g.id || crypto.randomUUID(),
-            connectors: g.connectors?.map(c => ({ ...c, id: c.id || crypto.randomUUID() })) || []
+            id: g.id || generateId(),
+            connectors: g.connectors?.map(c => ({ ...c, id: c.id || generateId() })) || []
           })),
-          documents: location.documents?.map(doc => ({ ...doc, id: doc.id || crypto.randomUUID() })) || [],
-          contacts: location.contacts?.map(c => ({ ...c, id: c.id || crypto.randomUUID() })) || [],
+          documents: location.documents?.map(doc => ({ ...doc, id: doc.id || generateId() })) || [],
+          contacts: location.contacts?.map(c => ({ ...c, id: c.id || generateId() })) || [],
         };
         reset(formData);
         setOpenAccordionItems(formData.powerConnectorGroups.map(g => g.id));
@@ -291,16 +291,16 @@ export function LocationForm({
       ...values,
       powerConnectorGroups: values.powerConnectorGroups?.map(g => ({
         ...g,
-        id: g.id || crypto.randomUUID(),
-        connectors: g.connectors?.map(c => ({ ...c, id: c.id || crypto.randomUUID() })) || [],
+        id: g.id || generateId(),
+        connectors: g.connectors?.map(c => ({ ...c, id: c.id || generateId() })) || [],
       })) || [],
       documents: values.documents?.map(doc => ({
         ...doc,
-        id: doc.id || crypto.randomUUID(),
+        id: doc.id || generateId(),
       })) || [],
       contacts: values.contacts?.map(c => ({
         ...c,
-        id: c.id || crypto.randomUUID(),
+        id: c.id || generateId(),
       })) || [],
     };
     onSave(dataToSave, values.id);

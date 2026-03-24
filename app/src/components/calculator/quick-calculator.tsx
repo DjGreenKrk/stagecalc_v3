@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useUser, useCollection, useDoc } from '@/firebase';
+import { useUser, useCollection, useDoc } from '@/lib/pb-hooks';
 import { pb } from '@/lib/pocketbase';
 import { useRouter, useParams } from 'next/navigation';
 import type { Device, Calculation, CalculationGroup, CalculationItem, PowerConnector, Location, Client, UserFavoriteDevices, DeviceCategoryName, DeviceCategory, PowerConnectorGroup } from '@/lib/definitions';
@@ -13,7 +13,7 @@ import { PlusCircle, Trash2, Weight, Zap, GripVertical, X, Package, Ampersand, P
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { SummaryCard } from '../event/summary-card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { cn } from '@/lib/utils';
+import { cn, generateId } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check } from 'lucide-react';
@@ -44,7 +44,7 @@ import { deviceCategories, ConnectorTypes, connectorTypeConfig } from '@/lib/def
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/lib/pb-hooks/non-blocking-updates';
 import { Separator } from '../ui/separator';
 
 type ActiveConnector = PowerConnector & {
@@ -185,8 +185,16 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
       try {
         const allDevices: Device[] = [];
         for (const cat of deviceCategories) {
-          const records = await pb.collection(cat.collectionName).getFullList<Device>();
-          allDevices.push(...records.map(r => ({ ...r, category: cat.name })));
+          try {
+            const records = await pb.collection(cat.collectionName).getFullList<Device>();
+            allDevices.push(...records.map(r => ({ ...r, category: cat.name })));
+          } catch (err: any) {
+            if (err.status === 404) {
+              console.warn(`Collection ${cat.collectionName} not found in PocketBase.`);
+            } else {
+              throw err;
+            }
+          }
         }
         setDeviceCatalog(allDevices);
       } catch (error) {
@@ -218,7 +226,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
       }
     } else {
       if (groups.length === 0) {
-        const initialGroupId = crypto.randomUUID();
+        const initialGroupId = generateId();
         setGroups([{ tempId: initialGroupId, name: 'Domyślna grupa', items: [] }]);
         setTargetGroup(initialGroupId);
       }
@@ -305,7 +313,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
 
     if (newConnectorGroups.length === 0) {
       newConnectorGroups.push({
-        id: crypto.randomUUID(),
+        id: generateId(),
         name: 'Dodatkowe przyłącza',
         connectors: [],
         isLocationGroup: false,
@@ -437,8 +445,8 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
     if (!config) return;
 
     const newConnector: ActiveConnector = {
-      id: crypto.randomUUID(),
-      instanceId: crypto.randomUUID(),
+      id: generateId(),
+      instanceId: generateId(),
       type: manualConnectorType as PowerConnector['type'],
       phases: config.phases as 1 | 3,
       maxCurrentA: config.maxCurrentA,
@@ -461,8 +469,8 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
     const newConnectors: ActiveConnector[] = (device.distributionOutputs || []).map(output => {
       const config = connectorTypeConfig[output.type as keyof typeof connectorTypeConfig];
       return Array.from({ length: output.quantity }, (_, i) => ({
-        id: crypto.randomUUID(),
-        instanceId: crypto.randomUUID(),
+        id: generateId(),
+        instanceId: generateId(),
         type: output.type as PowerConnector['type'],
         phases: config?.phases as 1 | 3 || 1,
         maxCurrentA: config?.maxCurrentA || 0,
@@ -472,7 +480,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
     }).flat();
 
     const newGroup: ConnectorGroup = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: device.name,
       connectors: newConnectors,
       isLocationGroup: false,
@@ -486,7 +494,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
 
   const handleAddConnectorGroup = () => {
     setConnectorGroups(prev => [...prev, {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: `Nowa grupa przyłączy`,
       connectors: [],
       isLocationGroup: false,
@@ -545,7 +553,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
 
   const handleAddGroup = () => {
     const newGroupName = `Grupa ${groups.length + 1}`;
-    const newGroup = { tempId: crypto.randomUUID(), name: newGroupName, items: [] };
+    const newGroup = { tempId: generateId(), name: newGroupName, items: [] };
     setGroups([...groups, newGroup]);
     setTargetGroup(newGroup.tempId);
   };
@@ -587,7 +595,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
           return { ...group, items: newItems };
         } else {
           const newItem: CalculationItem = {
-            tempId: crypto.randomUUID(),
+            tempId: generateId(),
             deviceId: deviceToAdd,
             quantity: quantity
           };

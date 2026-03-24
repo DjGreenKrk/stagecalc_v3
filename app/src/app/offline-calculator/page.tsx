@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import type { PowerConnector } from '@/lib/definitions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, generateId } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from '@/context/language-context';
 
@@ -75,7 +75,7 @@ export default function OfflineCalculatorPage() {
       return;
     }
     const newDevice: TemporaryDevice = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name,
       powerW,
       currentA: typeof currentA === 'number' ? currentA : 0,
@@ -107,8 +107,8 @@ export default function OfflineCalculatorPage() {
     const config = connectorTypeConfig[connectorTypeToAdd];
     if (config) {
       const newConnector: TemporaryConnector = {
-        id: crypto.randomUUID(),
-        instanceId: crypto.randomUUID(),
+        id: generateId(),
+        instanceId: generateId(),
         type: connectorTypeToAdd as PowerConnector['type'],
         phases: config.phases as 1 | 3,
         maxCurrentA: config.maxCurrentA,

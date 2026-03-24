@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
-import { useUser } from '@/firebase';
+import { useUser } from '@/lib/pb-hooks';
 import { useTranslation } from '@/context/language-context';
 import { Mail } from 'lucide-react';
 
