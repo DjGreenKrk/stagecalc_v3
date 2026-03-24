@@ -4,12 +4,15 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useUser, useCollection, useDoc } from '@/lib/pb-hooks';
 import { pb } from '@/lib/pocketbase';
 import { useRouter, useParams } from 'next/navigation';
-import type { Device, Calculation, CalculationGroup, CalculationItem, PowerConnector, Location, Client, UserFavoriteDevices, DeviceCategoryName, DeviceCategory, PowerConnectorGroup } from '@/lib/definitions';
+import type { Device, Calculation, CalculationGroup, CalculationItem, PowerConnector, Location, Client, UserFavoriteDevices, DeviceCategoryName, DeviceCategory, PowerConnectorGroup, PowerPreset, Outlet, Connection } from '@/lib/definitions';
+import { VisualPowerPatcher } from '../device/power-visual-patcher';
+import { PresetEditorDialog } from '../device/preset-editor-dialog';
+import { PresetManagerDialog } from '../device/preset-manager-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { PlusCircle, Trash2, Weight, Zap, GripVertical, X, Package, Ampersand, PercentCircle, Edit, Shuffle, FileDown, ChevronsUpDown, Star, MapPin, Download, Link as LinkIcon, Plug, Save } from 'lucide-react';
+import { PlusCircle, Trash2, Weight, Zap, GripVertical, X, Package, Ampersand, PercentCircle, Edit, Shuffle, FileDown, ChevronsUpDown, Star, MapPin, Download, Link as LinkIcon, Plug, Save, Grid2X2, Settings2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { SummaryCard } from '../event/summary-card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
@@ -55,6 +58,8 @@ type ActiveConnector = PowerConnector & {
 type ConnectorGroup = PowerConnectorGroup & {
   isLocationGroup?: boolean;
   deviceId?: string; // Link to device from catalog if created from it
+  presetId?: string; // Preset ID for visual patcher
+  customPreset?: PowerPreset; // Custom in-memory preset for quick distros
 };
 
 
@@ -147,6 +152,9 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
   const { toast } = useToast();
 
   const [deviceCatalog, setDeviceCatalog] = useState<Device[]>([]);
+  const [powerPresets, setPowerPresets] = useState<PowerPreset[]>([]);
+  const [activePatcherGroupId, setActivePatcherGroupId] = useState<string | null>(null);
+  const [connections, setConnections] = useState<Connection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // State for the calculator itself
@@ -170,7 +178,35 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
   const [isDeleteGroupConfirmOpen, setIsDeleteGroupConfirmOpen] = useState(false);
   const [groupToDeleteId, setGroupToDeleteId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<DeviceCategory | null>(null);
+  const [isCustomPresetDialogOpen, setIsCustomPresetDialogOpen] = useState(false);
+  const [isPresetManagerDialogOpen, setIsPresetManagerDialogOpen] = useState(false);
 
+  const handlePresetsChanged = async () => {
+    try {
+      const presets = await pb.collection('power_presets').getFullList<PowerPreset>();
+      setPowerPresets(presets);
+    } catch (err) {
+      console.warn("Failed to load power presets:", err);
+    }
+  };
+
+  const handleCustomPresetSaved = async (presetId: string) => {
+    try {
+      const preset = await pb.collection('power_presets').getOne<PowerPreset>(presetId);
+      const newGroup: ConnectorGroup = {
+        id: generateId(),
+        name: preset.name,
+        connectors: [], 
+        isLocationGroup: false,
+        presetId: preset.id,
+      };
+      setConnectorGroups(prev => [...prev, newGroup]);
+      setPowerPresets(prev => [...prev, preset]);
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Błąd ładowania presetu", variant: "destructive" });
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -197,6 +233,47 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
           }
         }
         setDeviceCatalog(allDevices);
+
+        // Fetch Power Presets
+        try {
+          const presets = await pb.collection('power_presets').getFullList<PowerPreset>();
+          setPowerPresets(presets);
+        } catch (err) {
+          console.warn("Failed to load power presets:", err);
+        }
+
+        // Fetch Connections for this calculation
+        if (params.id && params.id !== 'new') {
+          try {
+            const conns = await pb.collection('connections').getFullList<Connection>({
+              filter: `calculationId = "${params.id}"`
+            });
+            setConnections(conns);
+
+            // Subscribe to connections
+            pb.collection('connections').subscribe('*', (e) => {
+              if (e.action === 'create' || e.action === 'update') {
+                const c = e.record as unknown as Connection;
+                if (c.calculationId === params.id) {
+                  setConnections(prev => {
+                    const idx = prev.findIndex(item => item.id === c.id);
+                    if (idx > -1) {
+                      const upd = [...prev];
+                      upd[idx] = c;
+                      return upd;
+                    }
+                    return [...prev, c];
+                  });
+                }
+              } else if (e.action === 'delete') {
+                setConnections(prev => prev.filter(item => item.id !== e.record.id));
+              }
+            });
+          } catch (err) {
+            console.warn("Failed to load connections:", err);
+          }
+        }
+
       } catch (error) {
         console.error("Error loading device catalog:", error);
       } finally {
@@ -264,6 +341,19 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
         toast({ title: "Kalkulacja zaktualizowana!" });
       } else {
         const newRecord = await pb.collection('calculations').create(sanitizedData);
+        
+        // Save in-memory connections for this new draft calculation
+        if (connections.length > 0) {
+           for (const conn of connections) {
+               // Remove temporary IDs and fields dynamically generated by the patcher
+               const { id, created, updated, expand, calculationId, ...connDataToSave } = conn as any;
+               await pb.collection('connections').create({
+                  ...connDataToSave,
+                  calculationId: newRecord.id
+               });
+           }
+        }
+
         toast({ title: "Kalkulacja zapisana!" });
         if (newRecord.id) {
           router.push(`/calculators/${newRecord.id}`);
@@ -287,43 +377,36 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
   );
 
   useEffect(() => {
-    let newConnectorGroups: ConnectorGroup[] = [];
+    setConnectorGroups(prevGroups => {
+      let newConnectorGroups: ConnectorGroup[] = [];
+      const manualGroups = prevGroups.filter(g => !g.isLocationGroup);
 
-    const manualGroups = connectorGroups.filter(g => !g.isLocationGroup);
-
-    if (selectedLocationId) {
-      const location = allLocations?.find(l => l.id === selectedLocationId);
-      if (location && location.powerConnectorGroups) {
-        newConnectorGroups.push(...location.powerConnectorGroups.map(group => ({
-          ...group,
-          id: `loc-${group.id}`,
-          isLocationGroup: true,
-          connectors: (group.connectors || []).flatMap(pc =>
-            Array.from({ length: pc.quantity || 1 }, (_, i) => ({
-              ...pc,
-              instanceId: `${pc.id}-${i}`,
-              isManual: false,
-            }))
-          )
-        })));
+      if (selectedLocationId) {
+        const location = allLocations?.find(l => l.id === selectedLocationId);
+        if (location && location.powerConnectorGroups) {
+          newConnectorGroups.push(...location.powerConnectorGroups.map(group => ({
+            ...group,
+            id: `loc-${group.id}`,
+            isLocationGroup: true,
+            connectors: (group.connectors || []).flatMap(pc =>
+              Array.from({ length: pc.quantity || 1 }, (_, i) => ({
+                ...pc,
+                instanceId: `${pc.id}-${i}`,
+                isManual: false,
+              }))
+            )
+          })));
+        }
       }
-    }
 
-    newConnectorGroups.push(...manualGroups);
+      newConnectorGroups.push(...manualGroups);
 
-    if (newConnectorGroups.length === 0) {
-      newConnectorGroups.push({
-        id: generateId(),
-        name: 'Dodatkowe przyłącza',
-        connectors: [],
-        isLocationGroup: false,
-      });
-    }
-
-    if (JSON.stringify(newConnectorGroups) !== JSON.stringify(connectorGroups)) {
-      setConnectorGroups(newConnectorGroups);
-    }
-  }, [selectedLocationId, allLocations, connectorGroups]);
+      if (JSON.stringify(newConnectorGroups) !== JSON.stringify(prevGroups)) {
+        return newConnectorGroups;
+      }
+      return prevGroups;
+    });
+  }, [selectedLocationId, allLocations]);
 
 
   const activeConnectors = useMemo(() => {
@@ -440,44 +523,88 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
     doc.save(`stagecalc-summary-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
-  const handleAddManualConnector = (targetGroupId: string) => {
-    const config = connectorTypeConfig[manualConnectorType as keyof typeof connectorTypeConfig];
-    if (!config) return;
+  const handleAddQuickDistro = (type: 'schuko1' | 'schuko4' | 'cee32') => {
+    let presetName = '';
+    let outlets: Outlet[] = [];
+    
+    if (type === 'schuko1') {
+      presetName = 'Gniazdo ścienne 16A';
+      outlets = [{ id: 'out_1', name: 'Gniazdo 1', phase: 'L1', type: '16A Uni-Schuko' }];
+    } else if (type === 'schuko4') {
+      presetName = 'Przedłużacz x4 16A';
+      outlets = [
+        { id: 'out_1', name: 'GN 1', phase: 'L1', type: '16A Uni-Schuko' },
+        { id: 'out_2', name: 'GN 2', phase: 'L1', type: '16A Uni-Schuko' },
+        { id: 'out_3', name: 'GN 3', phase: 'L1', type: '16A Uni-Schuko' },
+        { id: 'out_4', name: 'GN 4', phase: 'L1', type: '16A Uni-Schuko' }
+      ];
+    } else if (type === 'cee32') {
+      presetName = 'Rozdzielnica 32A -> 6x 16A';
+      outlets = [
+        { id: 'out_l1_1', name: 'L1-1', phase: 'L1', type: '16A Uni-Schuko' },
+        { id: 'out_l1_2', name: 'L1-2', phase: 'L1', type: '16A Uni-Schuko' },
+        { id: 'out_l2_1', name: 'L2-1', phase: 'L2', type: '16A Uni-Schuko' },
+        { id: 'out_l2_2', name: 'L2-2', phase: 'L2', type: '16A Uni-Schuko' },
+        { id: 'out_l3_1', name: 'L3-1', phase: 'L3', type: '16A Uni-Schuko' },
+        { id: 'out_l3_2', name: 'L3-2', phase: 'L3', type: '16A Uni-Schuko' },
+      ];
+    }
 
-    const newConnector: ActiveConnector = {
-      id: generateId(),
-      instanceId: generateId(),
-      type: manualConnectorType as PowerConnector['type'],
-      phases: config.phases as 1 | 3,
-      maxCurrentA: config.maxCurrentA,
-      quantity: 1,
-      isManual: true,
+    const customPreset: PowerPreset = {
+      id: generateId(), // Virtual ID
+      name: presetName,
+      outlets,
     };
 
-    setConnectorGroups(prev => prev.map(group => {
-      if (group.id === targetGroupId) {
-        return { ...group, connectors: [...group.connectors, newConnector] };
-      }
-      return group;
-    }));
+    const newGroup: ConnectorGroup = {
+      id: generateId(),
+      name: presetName,
+      connectors: [], // No longer using manual connectors
+      isLocationGroup: false,
+      customPreset,
+    };
+
+    setConnectorGroups(prev => [...prev, newGroup]);
   };
 
   const handleAddDistroFromCatalog = (deviceId: string) => {
-    const device = deviceCatalog.find(d => d.id === deviceId);
+    const device = deviceCatalog.find((d: Device) => d.id === deviceId);
     if (!device || device.subcategory !== 'distribution_boxes') return;
 
-    const newConnectors: ActiveConnector[] = (device.distributionOutputs || []).map(output => {
-      const config = connectorTypeConfig[output.type as keyof typeof connectorTypeConfig];
-      return Array.from({ length: output.quantity }, (_, i) => ({
-        id: generateId(),
-        instanceId: generateId(),
-        type: output.type as PowerConnector['type'],
-        phases: config?.phases as 1 | 3 || 1,
-        maxCurrentA: config?.maxCurrentA || 0,
-        quantity: 1,
-        isManual: true,
-      }));
-    }).flat();
+    let newConnectors: ActiveConnector[] = [];
+
+    if (device.presetId) {
+      const preset = powerPresets.find(p => p.id === device.presetId);
+      if (preset) {
+        newConnectors = preset.outlets.map((outlet: Outlet) => {
+          const config = connectorTypeConfig[outlet.type as keyof typeof connectorTypeConfig];
+          return {
+            id: generateId(),
+            instanceId: generateId(),
+            name: outlet.name,
+            type: outlet.type,
+            phases: config?.phases as 1 | 3 || (outlet.phase === 'L1' ? 1 : 3),
+            maxCurrentA: config?.maxCurrentA || 16,
+            quantity: 1,
+            isManual: true,
+          };
+        });
+      }
+    } else {
+      // Legacy support
+      newConnectors = (device.distributionOutputs || []).map((output: any) => {
+        const config = connectorTypeConfig[output.type as keyof typeof connectorTypeConfig];
+        return Array.from({ length: output.quantity }, (_, i) => ({
+          id: generateId(),
+          instanceId: generateId(),
+          type: output.type as PowerConnector['type'],
+          phases: config?.phases as 1 | 3 || 1,
+          maxCurrentA: config?.maxCurrentA || 0,
+          quantity: 1,
+          isManual: true,
+        }));
+      }).flat();
+    }
 
     const newGroup: ConnectorGroup = {
       id: generateId(),
@@ -485,7 +612,8 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
       connectors: newConnectors,
       isLocationGroup: false,
       deviceId: device.id,
-      inputConnectorType: device.distributionInput
+      presetId: (device as any).presetId, // Inherit preset from device
+      inputConnectorType: (device as any).distributionInput || null,
     };
 
     setConnectorGroups(prev => [...prev, newGroup]);
@@ -562,6 +690,75 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
     setGroups(groups.filter(g => g.tempId !== groupId));
   };
 
+  // Recursive distro load calculation natively aware of nested distro connections
+  const getPhaseOfOutlet = useCallback((distroId: string, outletId: string) => {
+    const group = connectorGroups.find(g => g.id === distroId);
+    if (!group) return null;
+    const preset = group.customPreset || powerPresets.find(p => p.id === group.presetId);
+    if (!preset) return null;
+    const outlet = preset.outlets.find(o => o.id === outletId);
+    return outlet?.phase;
+  }, [connectorGroups, powerPresets]);
+
+  const calculateDistroLoad = useCallback((distroId: string) => {
+    let l1 = 0; let l2 = 0; let l3 = 0;
+    const outgoingConns = connections.filter(c => c.sourceDeviceId === distroId);
+
+    outgoingConns.forEach(conn => {
+      const phase = getPhaseOfOutlet(distroId, conn.sourceOutletId);
+      if (!phase) return;
+
+      let drawA = 0;
+      let targetL1 = 0; let targetL2 = 0; let targetL3 = 0;
+
+      if (conn.targetDeviceId && conn.targetGroupId) {
+        const cg = groups.find(g => g.tempId === conn.targetGroupId);
+        const item = cg?.items.find(i => i.tempId === conn.targetDeviceId);
+        const dev = deviceCatalog.find(d => d.id === item?.deviceId);
+        if (dev) drawA = (dev.currentA || 0) * (item?.quantity || 1);
+      } 
+      else if (conn.targetGroupId && !conn.targetDeviceId) {
+        const cg = groups.find(g => g.tempId === conn.targetGroupId);
+        cg?.items.forEach(item => {
+           const dev = deviceCatalog.find(d => d.id === item.deviceId);
+           if (dev) drawA += (dev.currentA || 0) * (item.quantity || 1);
+        });
+      }
+      else if (conn.targetDeviceId && !conn.targetGroupId) {
+         // It's another distro mapped to this outlet
+         const childLoad = calculateDistroLoad(conn.targetDeviceId);
+         targetL1 = childLoad.l1;
+         targetL2 = childLoad.l2;
+         targetL3 = childLoad.l3;
+      }
+
+      if (phase === 'L1') { l1 += drawA + targetL1 + targetL2 + targetL3; }
+      else if (phase === 'L2') { l2 += drawA + targetL1 + targetL2 + targetL3; }
+      else if (phase === 'L3') { l3 += drawA + targetL1 + targetL2 + targetL3; }
+      else if (phase === 'All') {
+         if (targetL1 > 0 || targetL2 > 0 || targetL3 > 0) {
+            l1 += targetL1; l2 += targetL2; l3 += targetL3;
+         } else {
+            l1 += drawA / 3; l2 += drawA / 3; l3 += drawA / 3;
+         }
+      }
+    });
+
+    return { l1, l2, l3 };
+  }, [connections, groups, deviceCatalog, getPhaseOfOutlet]);
+
+  const globalPhaseLoad = useMemo(() => {
+    let l1 = 0; let l2 = 0; let l3 = 0;
+    const rootDistros = connectorGroups.filter(g => 
+      !connections.some(c => c.targetDeviceId === g.id && !c.targetGroupId)
+    );
+    rootDistros.forEach(g => {
+       const load = calculateDistroLoad(g.id);
+       l1 += load.l1; l2 += load.l2; l3 += load.l3;
+    });
+    return { l1, l2, l3 };
+  }, [calculateDistroLoad, connectorGroups, connections]);
+
   const handleGroupNameChange = (groupId: string, newName: string) => {
     setGroups(groups.map(g => g.tempId === groupId ? { ...g, name: newName } : g));
   };
@@ -580,7 +777,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
     const quantity = typeof quantityToAdd === 'number' ? quantityToAdd : 1;
     if (!deviceToAdd || !targetGroup || quantity < 1) return;
 
-    const device = deviceCatalog.find(d => d.id === deviceToAdd);
+    const device = deviceCatalog.find((d: Device) => d.id === deviceToAdd);
     if (!device) return;
 
     const isCable = device.subcategory === 'power_cables';
@@ -642,7 +839,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
     return groups.map(group => {
       const itemsWithData = group.items.map(item => {
         if (item.deviceId) {
-          const device = deviceCatalog.find(d => d.id === item.deviceId);
+          const device = deviceCatalog.find((d: Device) => d.id === item.deviceId);
           return device ? {
             item,
             name: device.name,
@@ -668,7 +865,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
     return fullCalculationList.flat().flatMap(g => g.items).reduce(
       (acc, { item }) => {
         if (item.deviceId) {
-          const device = deviceCatalog.find(d => d.id === item.deviceId);
+          const device = deviceCatalog.find((d: Device) => d.id === item.deviceId);
           if (device) {
             const quantity = item.quantity || 1;
             acc.powerW += device.powerW * quantity;
@@ -688,6 +885,8 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
     const allItems = fullCalculationList.flatMap(g => g.items);
 
     const directConnectorLoads: { [instanceId: string]: number } = {};
+
+    // 1. Process Internal Calculator Assignments (Legacy/Manual)
     allItems.forEach(({ item }) => {
       const itemGroup = fullCalculationList.find(g => g.items.some(i => i.item.tempId === item.tempId));
       const device = item.deviceId ? deviceCatalog.find(d => d.id === item.deviceId) : null;
@@ -699,6 +898,46 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
       }
     });
 
+    // 2. Process External Visual Patches (Realtime)
+    connections.forEach(conn => {
+      // Is it a group patch?
+      if (conn.targetGroupId) {
+        const group = groups.find(g => g.tempId === conn.targetGroupId);
+        if (group) {
+          const groupTotalLoad = group.items.reduce((acc: number, item: CalculationItem) => {
+            const device = deviceCatalog.find((d: Device) => d.id === item.deviceId);
+            return acc + (device ? device.currentA * item.quantity : 0);
+          }, 0);
+          
+          // Here we assume that if a group is visually patched to an outlet, 
+          // it adds to the load of THAT outlet instance.
+          // CalculationGroups can be pinned to multiple outlets via both legacy and visual systems.
+          // For simplicity, we add the full group load if it's the only outlet, 
+          // but if it's multiple, we should ideally distribute.
+          // Let's check how many outlets this group is patched to (including legacy).
+          const visualOutletsForGroup = connections.filter(c => c.targetGroupId === conn.targetGroupId).length;
+          const legacyOutletsForGroup = group.assignedConnectorIds?.length || 0;
+          const totalOutletsForGroup = visualOutletsForGroup + legacyOutletsForGroup;
+          
+          if (totalOutletsForGroup > 0) {
+            const loadPerOutlet = groupTotalLoad / totalOutletsForGroup;
+            directConnectorLoads[conn.sourceOutletId] = (directConnectorLoads[conn.sourceOutletId] || 0) + loadPerOutlet;
+          }
+        }
+      } 
+      // Is it a direct device patch?
+      else if (conn.targetDeviceId) {
+        const device = deviceCatalog.find((d: Device) => d.id === conn.targetDeviceId);
+        if (device) {
+          // Find if this device is in any group to get its quantity
+          const itemInCalc = allItems.find(i => i.item.deviceId === conn.targetDeviceId);
+          const quantity = itemInCalc?.item.quantity || 1;
+          directConnectorLoads[conn.sourceOutletId] = (directConnectorLoads[conn.sourceOutletId] || 0) + (device.currentA * quantity);
+        }
+      }
+    });
+
+    // 3. Process Distro Nesting (Recursive Load)
     const getDistroLoad = (groupId: string): number => {
       const group = connectorGroups.find(g => g.id === groupId);
       if (!group) return 0;
@@ -723,16 +962,22 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
     });
 
     return connectorGroups.map(group => {
+      // Find the device associated with this group to see if it has a preset
+      const distroDevice = group.deviceId ? deviceCatalog.find((d: Device) => d.id === group.deviceId) : null;
+      const outlets = distroDevice?.presetId ? powerPresets.find(p => p.id === distroDevice.presetId)?.outlets : null;
+
       return {
         ...group,
         connectors: group.connectors.map(connector => {
+          // If this is a preset-based distro, we might need to map the outlet name
+          // instanceId for preset-based distros is generated from the outlet id
           const totalLoad = directConnectorLoads[connector.instanceId!] || 0;
           const totalCapacity = connector.phases === 3 ? connector.maxCurrentA * 3 : connector.maxCurrentA;
           const isOverloaded = totalLoad > totalCapacity;
 
           return {
             ...connector,
-            name: getConnectorDisplayName(connector as ActiveConnector, activeConnectors as ActiveConnector[]),
+            name: connector.name || getConnectorDisplayName(connector as ActiveConnector, activeConnectors as ActiveConnector[]),
             isOverloaded,
             totalLoad,
             totalCapacity,
@@ -740,7 +985,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
         }),
       };
     });
-  }, [fullCalculationList, connectorGroups, activeConnectors, deviceCatalog]);
+  }, [fullCalculationList, connectorGroups, activeConnectors, deviceCatalog, connections, groups, powerPresets]);
 
 
   // const favoriteDeviceIds = useMemo(() => new Set(user?.favorites || []), [user]);
@@ -995,9 +1240,21 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
                     return acc;
                   }, { powerW: 0, currentA: 0, weightKg: 0 });
 
-                  const assignedGroupConnectors = activeConnectors.filter(c => !!group.assignedConnectorIds?.includes(c.instanceId!));
-                  const totalMaxCurrent = assignedGroupConnectors.reduce((acc, c) => acc + (c.maxCurrentA * (c.phases === 3 ? 3 : 1)), 0);
-                  const loadPercentage = totalMaxCurrent > 0 ? (groupTotals.currentA / totalMaxCurrent) * 100 : 0;
+                  const itemIdsInGroup = group.items.map(i => i.item.deviceId);
+                  const groupConns = connections.filter(c => c.targetGroupId === group.tempId || (c.targetDeviceId && itemIdsInGroup.includes(c.targetDeviceId)));
+                  
+                  const getGroupOutletName = (dId: string, oId: string) => {
+                     const cg = connectorGroups.find(g => g.id === dId);
+                     if (!cg) return oId;
+                     const p = cg.customPreset || powerPresets.find(p => p.id === cg.presetId);
+                     return p?.outlets.find(o => o.id === oId)?.name || oId;
+                  };
+
+                  const uniquePatchedOutlets = Array.from(new Set(groupConns.map(c => `${c.sourceDeviceId}|${c.sourceOutletId}`))).map(key => {
+                      const [dId, oId] = key.split('|');
+                      const d = connectorGroups.find(cg => cg.id === dId);
+                      return { distro: d, outletId: oId };
+                  });
 
                   const itemIds = group.items.map(i => i.item.tempId);
 
@@ -1013,43 +1270,6 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
                               </div>
                             </AccordionTrigger>
                             <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                              <Popover open={openMultiSelects[group.tempId]} onOpenChange={(open) => toggleMultiSelect(group.tempId, open)}>
-                                <PopoverTrigger asChild>
-                                  <Button variant="outline" role="combobox" aria-expanded={openMultiSelects[group.tempId]} className="w-[150px] sm:w-[200px] justify-between h-9">
-                                    <span className="truncate">{(group.assignedConnectorIds?.length || 0) > 0 ? `${group.assignedConnectorIds!.length} wybrano` : 'Przypisz przyłącza...'}</span>
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                  <Command>
-                                    <CommandInput placeholder="Szukaj przyłączy..." />
-                                    <CommandList>
-                                      <CommandEmpty>Brak dostępnych przyłączy.</CommandEmpty>
-                                      {connectorGroups.map(connectorGroup => (
-                                        <CommandGroup key={connectorGroup.id} heading={connectorGroup.name}>
-                                          {connectorGroup.connectors
-                                            .filter(c => !usedConnectorIds.has(c.instanceId!) || group.assignedConnectorIds?.includes(c.instanceId!))
-                                            .map((c) => (
-                                              <CommandItem
-                                                key={c.instanceId}
-                                                value={c.instanceId}
-                                                onSelect={() => {
-                                                  const currentIds = group.assignedConnectorIds || [];
-                                                  const newIds = currentIds.includes(c.instanceId!)
-                                                    ? currentIds.filter(id => id !== c.instanceId!)
-                                                    : [...currentIds, c.instanceId!];
-                                                  handleGroupConnectorChange(group.tempId, newIds);
-                                                }}
-                                              >
-                                                <Check className={cn("mr-2 h-4 w-4", group.assignedConnectorIds?.includes(c.instanceId!) ? "opacity-100" : "opacity-0")} />
-                                                {getConnectorDisplayName(c as ActiveConnector, activeConnectors as ActiveConnector[])}
-                                              </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                      ))}
-                                    </CommandList>
-                                  </Command>
-                                </PopoverContent>
-                              </Popover>
                               <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={() => handleRemoveGroup(group.tempId)} disabled={groups.length <= 1}><Trash2 className="h-4 w-4" /></Button>
                             </div>
                           </div>
@@ -1059,12 +1279,14 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
                             <div className='flex items-center gap-1'><Zap className='h-4 w-4' /> <span>{(groupTotals.powerW / 1000).toFixed(2)} kW</span></div>
                             <div className='flex items-center gap-1'><Zap className='h-4 w-4' /> <span>{groupTotals.currentA.toFixed(2)} A</span></div>
                             <div className='flex items-center gap-1'><Weight className='h-4 w-4' /> <span>{groupTotals.weightKg.toFixed(1)} kg</span></div>
-                            {assignedGroupConnectors.length > 0 && (
-                              <>
-                                <Ampersand className="h-4 w-4 hidden sm:block" />
-                                <div className='flex items-center gap-1'><PercentCircle className='h-4 w-4' /> <span>{loadPercentage.toFixed(0)}% obciążenia</span></div>
-                              </>
-                            )}
+                            {uniquePatchedOutlets.map(({ distro, outletId }, idx) => distro && (
+                              <div key={idx} className={cn('flex items-center gap-1', idx === 0 && 'ml-auto')}>
+                                <Badge variant="outline" className="text-[10px] font-medium border-primary/40 text-foreground bg-primary/5">
+                                  <Plug className="h-3 w-3 mr-1.5 text-primary shrink-0" /> {distro.name} 
+                                  <span className="opacity-60 ml-1 font-normal">({getGroupOutletName(distro.id, outletId)})</span>
+                                </Badge>
+                              </div>
+                            ))}
                           </div>
                         </CardHeader>
                         <AccordionContent className="px-4 pb-4">
@@ -1111,37 +1333,37 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
                   <CardTitle>Stan przyłączy</CardTitle>
                 </CardHeader>
                 <CardContent>
+                  <div className="mb-6 p-4 rounded-xl border bg-card text-card-foreground shadow-sm bg-gradient-to-br from-background to-muted/50">
+                    <h4 className="text-sm font-semibold mb-3 flex items-center"><Zap className="h-4 w-4 mr-2 text-primary" /> Globalne obciążenie</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="flex flex-col p-2 rounded-lg border bg-background text-center">
+                        <span className="text-[10px] uppercase text-muted-foreground font-semibold mb-1">L1</span>
+                        <span className={cn("text-lg font-bold tracking-tight", globalPhaseLoad.l1 > 16 ? "text-destructive" : "text-foreground")}>{globalPhaseLoad.l1.toFixed(1)}A</span>
+                      </div>
+                      <div className="flex flex-col p-2 rounded-lg border bg-background text-center">
+                        <span className="text-[10px] uppercase text-muted-foreground font-semibold mb-1">L2</span>
+                        <span className={cn("text-lg font-bold tracking-tight", globalPhaseLoad.l2 > 16 ? "text-destructive" : "text-foreground")}>{globalPhaseLoad.l2.toFixed(1)}A</span>
+                      </div>
+                      <div className="flex flex-col p-2 rounded-lg border bg-background text-center">
+                        <span className="text-[10px] uppercase text-muted-foreground font-semibold mb-1">L3</span>
+                        <span className={cn("text-lg font-bold tracking-tight", globalPhaseLoad.l3 > 16 ? "text-destructive" : "text-foreground")}>{globalPhaseLoad.l3.toFixed(1)}A</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <Accordion type="multiple" defaultValue={connectorGroups.map(g => g.id)} className="w-full space-y-4">
                     {connectorGroups.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Wybierz lokalizację lub dodaj ręcznie przyłącze.</p>}
-                    {connectorStatus.map((group) => {
-                      const findDownstreamGroups = (startGroupId: string): Set<string> => {
-                        const downstream = new Set<string>([startGroupId]);
-                        const queue = [startGroupId];
-                        while (queue.length > 0) {
-                          const currentId = queue.shift()!;
-                          const children = connectorGroups.filter(g => g.sourceInput?.parentGroupId === currentId);
-                          for (const child of children) {
-                            if (!downstream.has(child.id)) {
-                              downstream.add(child.id);
-                              queue.push(child.id);
-                            }
-                          }
-                        }
-                        return downstream;
+                    {connectorGroups.map((group) => {
+                      const distroLoad = calculateDistroLoad(group.id);
+                      const upstreamConn = connections.find(c => c.targetDeviceId === group.id && !c.targetGroupId);
+                      const upstreamDistro = upstreamConn ? connectorGroups.find(g => g.id === upstreamConn.sourceDeviceId) : null;
+                      
+                      const getOutletName = (dId: string, oId: string) => {
+                         const cg = connectorGroups.find(g => g.id === dId);
+                         if (!cg) return oId;
+                         const p = cg.customPreset || powerPresets.find(p => p.id === cg.presetId);
+                         return p?.outlets.find(o => o.id === oId)?.name || oId;
                       };
-                      const downstreamIds = findDownstreamGroups(group.id);
-
-                      const availablePowerSources = connectorGroups
-                        .filter(cg => !downstreamIds.has(cg.id))
-                        .flatMap(parentGroup =>
-                          parentGroup.connectors
-                            .filter(pc => !usedConnectorIds.has(pc.instanceId!) || pc.instanceId === group.sourceInput?.parentConnectorId)
-                            .filter(pc => !group.inputConnectorType || pc.type === group.inputConnectorType)
-                            .map(pc => ({
-                              parentGroup,
-                              connector: pc
-                            }))
-                        );
 
                       return (
                         <AccordionItem value={group.id} key={group.id} className="border-none">
@@ -1162,75 +1384,55 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
                                     )}
                                   </div>
                                 </AccordionTrigger>
-                                {!group.isLocationGroup && (
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleRemoveConnectorGroup(group.id)}>
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {(group.presetId || group.customPreset) && (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="h-8 gap-2 border-primary/50 text-primary hover:bg-primary/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActivePatcherGroupId(group.id);
+                                      }}
+                                    >
+                                      <Grid2X2 className="h-4 w-4" />
+                                      Patcher
+                                    </Button>
+                                  )}
+                                  {!group.isLocationGroup && (
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleRemoveConnectorGroup(group.id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                               {!group.isLocationGroup && (
-                                <div className="mt-2">
-                                  <Label className="text-xs text-muted-foreground">Zasilanie wejściowe {group.inputConnectorType && <Badge variant="secondary" className="ml-1">{group.inputConnectorType}</Badge>}</Label>
-                                  <Select
-                                    onValueChange={(val) => handleGroupPowerSourceChange(group.id, val)}
-                                    value={group.sourceInput ? `${group.sourceInput.parentGroupId}|${group.sourceInput.parentConnectorId}` : 'none'}
-                                  >
-                                    <SelectTrigger className="h-8 text-xs">
-                                      <SelectValue placeholder="Wybierz zasilanie..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">Brak (źródło pierwotne)</SelectItem>
-                                      {availablePowerSources.map(({ parentGroup, connector }) => (
-                                        <SelectItem key={connector.instanceId} value={`${parentGroup.id}|${connector.instanceId}`}>
-                                          {`${parentGroup.name} - ${getConnectorDisplayName(connector as ActiveConnector, activeConnectors as ActiveConnector[])}`}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                <div className="mt-3 flex items-center">
+                                  <Label className="text-xs text-muted-foreground mr-2 shrink-0">Zasilanie:</Label>
+                                  {upstreamDistro && upstreamConn ? (
+                                    <Badge variant="outline" className="text-[10px] font-medium border-primary/40 text-foreground bg-primary/5">
+                                      <Plug className="h-3 w-3 mr-1.5 text-primary shrink-0" /> {upstreamDistro.name} <span className="opacity-60 ml-1 font-normal">({getOutletName(upstreamDistro.id, upstreamConn.sourceOutletId)})</span>
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary" className="text-[10px] font-normal" title="Złącz w Patcherze z inną rozdzielnicą">Z Głównej Sieci / Agregatu</Badge>
+                                  )}
                                 </div>
                               )}
                             </CardHeader>
                             <AccordionContent className="px-3 pb-3">
-                              <div className="grid gap-4">
-                                {!group.isLocationGroup && !group.deviceId && (
-                                  <div className="space-y-2">
-                                    <Label>Dodaj przyłącze do tej grupy</Label>
-                                    <div className="flex gap-2">
-                                      <Select value={manualConnectorType} onValueChange={setManualConnectorType}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                          {ConnectorTypes.map(type => (
-                                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                      <Button onClick={() => handleAddManualConnector(group.id)}>
-                                        <PlusCircle className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-                                {group.connectors.map((connector) => (
-                                  <div key={connector.instanceId} className={cn("p-4 border rounded-lg relative bg-background", connector.isOverloaded && "border-destructive bg-destructive/10")}>
-                                    {connector.isManual && !group.deviceId && (
-                                      <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-muted-foreground" onClick={() => handleRemoveManualConnector(group.id, connector.instanceId!)}>
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    <p className="font-medium pr-6">{getConnectorDisplayName(connector as ActiveConnector, activeConnectors as ActiveConnector[])}</p>
-                                    <div>
-                                      <p className="text-xs text-muted-foreground">Obciążenie</p>
-                                      <p className={cn("font-bold", connector.isOverloaded && "text-destructive")}>
-                                        {connector.totalLoad.toFixed(1)}A / {connector.totalCapacity}A
-                                      </p>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground text-center mt-2">
-                                      {connector.phases === 3 ? `(3x${connector.maxCurrentA}A)` : `Maks. ${connector.maxCurrentA}A na fazę`}
-                                    </p>
-                                    {connector.isOverloaded && <Badge variant="destructive" className="mt-1">Przeciążenie</Badge>}
-                                  </div>
-                                ))}
-                                {group.connectors.length === 0 && <p className="text-xs text-center text-muted-foreground py-2">Brak przyłączy w tej grupie.</p>}
+                              <div className="flex justify-between divide-x divide-border bg-background border rounded-lg overflow-hidden mt-1 shadow-sm">
+                                <div className="flex-1 flex flex-col justify-center items-center py-2 bg-gradient-to-b from-transparent to-muted/20">
+                                  <span className="text-[9px] uppercase font-bold text-muted-foreground mb-0.5 tracking-wider">L1</span>
+                                  <span className={cn("text-sm font-bold", distroLoad.l1 > 16 ? "text-destructive" : "text-foreground")}>{distroLoad.l1.toFixed(1)}A</span>
+                                </div>
+                                <div className="flex-1 flex flex-col justify-center items-center py-2 bg-gradient-to-b from-transparent to-muted/20">
+                                  <span className="text-[9px] uppercase font-bold text-muted-foreground mb-0.5 tracking-wider">L2</span>
+                                  <span className={cn("text-sm font-bold", distroLoad.l2 > 16 ? "text-destructive" : "text-foreground")}>{distroLoad.l2.toFixed(1)}A</span>
+                                </div>
+                                <div className="flex-1 flex flex-col justify-center items-center py-2 bg-gradient-to-b from-transparent to-muted/20">
+                                  <span className="text-[9px] uppercase font-bold text-muted-foreground mb-0.5 tracking-wider">L3</span>
+                                  <span className={cn("text-sm font-bold", distroLoad.l3 > 16 ? "text-destructive" : "text-foreground")}>{distroLoad.l3.toFixed(1)}A</span>
+                                </div>
                               </div>
                             </AccordionContent>
                           </Card>
@@ -1238,10 +1440,7 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
                       )
                     })}
                   </Accordion>
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    <Button variant="outline" className="w-full" onClick={handleAddConnectorGroup}>
-                      <PlusCircle className="mr-2 h-4 w-4" />Dodaj grupę przyłączy (np. agregat)
-                    </Button>
+                  <div className="flex flex-col gap-2 mt-6">
                     <Popover open={isDistroPopoverOpen} onOpenChange={setIsDistroPopoverOpen}>
                       <PopoverTrigger asChild>
                         <Button
@@ -1269,6 +1468,24 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
                         </Command>
                       </PopoverContent>
                     </Popover>
+
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <Button variant="outline" size="sm" onClick={() => handleAddQuickDistro('schuko1')} className="text-xs h-8">
+                        <PlusCircle className="mr-1 h-3 w-3" /> Gniazdo 16A
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleAddQuickDistro('schuko4')} className="text-xs h-8">
+                        <PlusCircle className="mr-1 h-3 w-3" /> Listwa 4x16A
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleAddQuickDistro('cee32')} className="text-xs h-8 col-span-2">
+                        <PlusCircle className="mr-1 h-3 w-3" /> Rozdzielnica 32A {'->'} 6x 16A
+                      </Button>
+                    </div>
+                    <Button variant="secondary" size="sm" onClick={() => setIsCustomPresetDialogOpen(true)} className="w-full mt-2 text-xs">
+                      <Grid2X2 className="mr-2 h-4 w-4 text-primary" /> Zbuduj własną rozdzielnicę (Zapiszna)
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setIsPresetManagerDialogOpen(true)} className="w-full mt-2 text-xs">
+                      <Settings2 className="mr-2 h-4 w-4 text-muted-foreground" /> Zarządzaj listą zapisanych ({powerPresets.length})
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -1314,6 +1531,46 @@ export function QuickCalculator({ initialData }: { initialData?: Calculation }) 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {activePatcherGroupId && (
+        <Dialog open={!!activePatcherGroupId} onOpenChange={(open) => !open && setActivePatcherGroupId(null)}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden border-none bg-transparent shadow-none">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Wizualny Patcher</DialogTitle>
+              <DialogDescription>Konfiguracja połączeń dla wybranej rozdzielnicy</DialogDescription>
+            </DialogHeader>
+            <div className="bg-background rounded-lg border shadow-lg overflow-hidden flex flex-col h-[85vh]">
+              <VisualPowerPatcher 
+                catalogDeviceId={connectorGroups.find(g => g.id === activePatcherGroupId)?.deviceId || ''}
+                instanceId={activePatcherGroupId} 
+                calculationId={params.id as string} 
+                customPreset={connectorGroups.find(g => g.id === activePatcherGroupId)?.customPreset}
+                onConnectionsChange={(updated) => {
+                  setConnections(prev => {
+                    const others = prev.filter(c => c.sourceDeviceId !== activePatcherGroupId);
+                    return [...others, ...updated];
+                  });
+                }}
+                initialConnections={connections.filter(c => c.sourceDeviceId === activePatcherGroupId)}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <PresetEditorDialog 
+        open={isCustomPresetDialogOpen} 
+        onOpenChange={setIsCustomPresetDialogOpen}
+        onSaved={handleCustomPresetSaved}
+      />
+
+      <PresetManagerDialog 
+        open={isPresetManagerDialogOpen} 
+        onOpenChange={setIsPresetManagerDialogOpen}
+        presets={powerPresets}
+        onPresetsChanged={handlePresetsChanged}
+        onCreateNew={() => setIsCustomPresetDialogOpen(true)}
+      />
     </>
   );
 }

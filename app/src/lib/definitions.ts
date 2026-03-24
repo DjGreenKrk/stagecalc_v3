@@ -118,6 +118,19 @@ export type DistributionOutput = {
   quantity: number;
 };
 
+export type Outlet = {
+  id: string;
+  name: string;
+  phase: 'L1' | 'L2' | 'L3' | 'All';
+  type: PowerConnectorType;
+};
+
+export type PowerPreset = {
+  id: string;
+  name: string;
+  outlets: Outlet[];
+};
+
 export type TrussLoadChartEntry = {
   id: string;
   length: number;
@@ -205,9 +218,9 @@ export type Device = {
   crossSection?: number;
   conductorCount?: number;
 
-  // Distribution Boxes
   distributionInput?: string;
   distributionOutputs?: DistributionOutput[];
+  presetId?: string; // Relation to power_presets
 
   // Adapters
   adapterIn?: string;
@@ -385,4 +398,14 @@ export type Assignment = {
   deviceId: string;
   powerConnectorId: string;
   phase: string;
+};
+
+export type Connection = {
+  id: string;
+  calculationId: string;
+  sourceDeviceId: string;
+  sourceOutletId: string;
+  targetDeviceId?: string;
+  targetGroupId?: string;
+  notes?: string;
 };

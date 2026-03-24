@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -21,14 +21,18 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import type { Device, DeviceCategory, DistributionOutput } from '@/lib/definitions';
+import type { Device, DeviceCategory, DistributionOutput, PowerPreset } from '@/lib/definitions';
 import { useTranslation } from '@/context/language-context';
+import { pb } from '@/lib/pocketbase';
+import { VisualPowerPatcher } from './power-visual-patcher';
+import { PresetEditorDialog } from './preset-editor-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Switch } from '../ui/switch';
 import { ConnectorTypes } from '@/lib/definitions';
 import { ChevronsUpDown, PlusCircle, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { Card } from '../ui/card';
 import { RichTextEditor } from '../ui/rich-text-editor';
 
 const distributionOutputSchema = z.object({
@@ -54,6 +58,7 @@ const getCablingFormSchema = (t: (key: string) => string) => z.object({
   // Distribution Boxes
   distributionInput: z.string().optional(),
   distributionOutputs: z.array(distributionOutputSchema).optional(),
+  presetId: z.string().optional(),
   mountType: z.array(z.string()).optional(),
   
   // Adapters
@@ -69,6 +74,7 @@ type CablingDeviceFormProps = {
   device?: Omit<Device, 'id'> & { id?: string };
   onSave: (device: Omit<Device, 'id' | 'category'> & { id?: string }) => void;
   category: DeviceCategory;
+  calculationId?: string;
 };
 
 export function CablingDeviceForm({
@@ -77,6 +83,7 @@ export function CablingDeviceForm({
   device,
   onSave,
   category,
+  calculationId,
 }: CablingDeviceFormProps) {
   const { t } = useTranslation();
   const formSchema = getCablingFormSchema(t);
@@ -93,6 +100,27 @@ export function CablingDeviceForm({
     control,
     name: "distributionOutputs",
   });
+
+  const [availablePresets, setAvailablePresets] = useState<PowerPreset[]>([]);
+  const [isPresetEditorOpen, setIsPresetEditorOpen] = useState(false);
+
+  const fetchPresets = async () => {
+    try {
+      const list = await pb.collection('power_presets').getFullList<PowerPreset>();
+      setAvailablePresets(list);
+    } catch (err) {
+      console.error('Failed to fetch power presets:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPresets();
+  }, []);
+
+  const handlePresetSaved = async (presetId: string) => {
+    await fetchPresets();
+    setValue('presetId', presetId);
+  };
 
   useEffect(() => {
     if (open) {
@@ -143,77 +171,139 @@ export function CablingDeviceForm({
     </>
   );
 
-  const renderDistributionBoxFields = () => (
+  const renderDistributionBoxFields = () => {
+    const selectedPresetId = watch('presetId');
+
+    return (
       <>
         <Separator className="my-4" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-            <FormField
-              control={control}
-              name="distributionInput"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Wejście</FormLabel>
+        <div className="space-y-4">
+          <FormField
+            control={control}
+            name="presetId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center justify-between">
+                  Preset rozdzielni (Visual Patcher)
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-5 w-5 text-primary" 
+                    onClick={() => setIsPresetEditorOpen(true)}
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                  </Button>
+                </FormLabel>
+                <div className="flex gap-2">
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Wybierz wejście..." />
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Wybierz preset gniazd..." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {ConnectorTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      <SelectItem value="none">Brak (użyj listy ręcznej)</SelectItem>
+                      {availablePresets.map((p: PowerPreset) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="space-y-2">
-                <FormLabel>Wyjścia</FormLabel>
-                <div className="space-y-2">
-                  {fields.map((item, index) => (
-                    <div key={item.id} className="flex items-center gap-2">
-                      <FormField
-                        control={control}
-                        name={`distributionOutputs.${index}.type`}
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Typ wyjścia..." />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {ConnectorTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={control}
-                        name={`distributionOutputs.${index}.quantity`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input type="number" placeholder="Ilość" className="w-20" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                       <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button>
-                    </div>
-                  ))}
                 </div>
-                 <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => append({ type: '', quantity: 1 })}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Dodaj wyjście
-                </Button>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {selectedPresetId && selectedPresetId !== 'none' ? (
+            <div className="space-y-4">
+              {calculationId && device?.id ? (
+                <div className="border rounded-xl p-4 bg-muted/10">
+                  <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider text-muted-foreground">Live Visual Patching</h4>
+                  <VisualPowerPatcher deviceId={device.id} calculationId={calculationId} />
+                </div>
+              ) : (
+                <Card className="p-4 border-dashed text-center">
+                  <p className="text-sm text-muted-foreground italic">
+                    Podgląd siatki gniazd dostępny po zapisaniu urządzenia i otwarciu w kontekście eventu.
+                  </p>
+                </Card>
+              )}
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start border p-4 rounded-lg bg-muted/5">
+                <FormField
+                  control={control}
+                  name="distributionInput"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Wejście (Legacy)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Wybierz wejście..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {ConnectorTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="space-y-2">
+                    <FormLabel>Wyjścia (Legacy)</FormLabel>
+                    <div className="space-y-2">
+                      {fields.map((item, index) => (
+                        <div key={item.id} className="flex items-center gap-2">
+                          <FormField
+                            control={control}
+                            name={`distributionOutputs.${index}.type`}
+                            render={({ field: outputField }) => (
+                              <FormItem className="flex-1">
+                                <Select onValueChange={outputField.onChange} value={outputField.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Typ wyjścia..." />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {ConnectorTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={control}
+                            name={`distributionOutputs.${index}.quantity`}
+                            render={({ field: qtyField }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input type="number" placeholder="Ilość" className="w-20" {...qtyField} />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                           <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button>
+                        </div>
+                      ))}
+                    </div>
+                     <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => append({ type: '', quantity: 1 })}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Dodaj wyjście
+                    </Button>
+                </div>
+            </div>
+          )}
         </div>
-        <FormField control={control} name="mountType" render={({ field }) => (<FormItem><FormLabel>Sposób montażu</FormLabel><Select onValueChange={(v) => field.onChange(v.split(','))} value={field.value?.join(',')}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="ground">Stojąca (ground)</SelectItem><SelectItem value="truss">Wisząca (truss)</SelectItem><SelectItem value="rack">Rack</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-    </>
-  );
+        <div className="mt-4">
+           <FormField control={control} name="mountType" render={({ field }) => (<FormItem><FormLabel>Sposób montażu</FormLabel><Select onValueChange={(v) => field.onChange(v.split(','))} value={field.value?.join(',')}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="ground">Stojąca (ground)</SelectItem><SelectItem value="truss">Wisząca (truss)</SelectItem><SelectItem value="rack">Rack</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+        </div>
+      </>
+    );
+  };
   
   const renderAdapterFields = () => (
      <>
@@ -292,6 +382,11 @@ export function CablingDeviceForm({
           </form>
         </Form>
       </DialogContent>
+      <PresetEditorDialog 
+        open={isPresetEditorOpen} 
+        onOpenChange={setIsPresetEditorOpen} 
+        onSaved={handlePresetSaved}
+      />
     </Dialog>
   );
 }

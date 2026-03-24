@@ -1,0 +1,44 @@
+{
+  "power_presets": [
+    {
+      "name": "ISV-6 32/12 (Standard)",
+      "outlets": [
+        {"id": "out1", "name": "OUT 1", "phase": "L1", "type": "16A Uni-Schuko"},
+        {"id": "out2", "name": "OUT 2", "phase": "L2", "type": "16A Uni-Schuko"},
+        {"id": "out3", "name": "OUT 3", "phase": "L3", "type": "16A Uni-Schuko"},
+        {"id": "out4", "name": "OUT 4", "phase": "L1", "type": "16A Uni-Schuko"},
+        {"id": "out5", "name": "OUT 5", "phase": "L2", "type": "16A Uni-Schuko"},
+        {"id": "out6", "name": "OUT 6", "phase": "L3", "type": "16A Uni-Schuko"}
+      ]
+    }
+  ],
+  "lighting_devices": [
+    {
+      "name": "Robe BMFL Spot",
+      "manufacturer": "Robe",
+      "subcategory": "moving_heads",
+      "powerW": 2000,
+      "currentA": 8.7,
+      "weightKg": 36,
+      "lightSourceType": "spot"
+    },
+    {
+      "name": "Martin ERA 800 Performance",
+      "manufacturer": "Martin",
+      "subcategory": "moving_heads",
+      "powerW": 1200,
+      "currentA": 5.2,
+      "weightKg": 42,
+      "lightSourceType": "spot"
+    }
+  ],
+  "cabling_devices": [
+    {
+      "name": "Rozdzielnia 32A Main",
+      "manufacturer": "PCE",
+      "subcategory": "distribution_boxes",
+      "distributionInput": "32A CEE 5P",
+      "weightKg": 12
+    }
+  ]
+}
