@@ -21,7 +21,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import type { Device, DeviceCategory } from '@/lib/definitions';
 import { useTranslation } from '@/context/language-context';
 import { generateId } from '@/lib/utils';
@@ -29,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Separator } from '../ui/separator';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../ui/table';
+import { RichTextEditor } from '../ui/rich-text-editor';
 
 const loadChartEntrySchema = z.object({
   id: z.string().default(() => generateId()),
@@ -276,7 +276,23 @@ export function RiggingDeviceForm({
 
             <Separator className="my-2" />
 
-            <FormField control={control} name="notes" render={({ field }) => (<FormItem><FormLabel>{t('common.notes')}</FormLabel><FormControl><Textarea placeholder={t('devices.notes_placeholder')} {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField
+              control={control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('common.notes')}</FormLabel>
+                  <FormControl>
+                    <RichTextEditor 
+                      value={field.value || ''} 
+                      onChange={field.onChange} 
+                      placeholder={t('devices.notes_placeholder')} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button type="submit">{t('common.save_changes')}</Button>

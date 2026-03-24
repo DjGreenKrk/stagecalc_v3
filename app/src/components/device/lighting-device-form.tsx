@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -22,7 +21,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import type { Device, DeviceCategory } from '@/lib/definitions';
 import { useTranslation } from '@/context/language-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -30,6 +28,7 @@ import { Separator } from '../ui/separator';
 import { Checkbox } from '../ui/checkbox';
 import { Switch } from '../ui/switch';
 import { LightingControlProtocols, LightSourceTypes, StaticLightTypes, ColorSystems } from '@/lib/definitions';
+import { RichTextEditor } from '../ui/rich-text-editor';
 
 const NOMINAL_VOLTAGE = 230;
 
@@ -257,7 +256,23 @@ export function LightingDeviceForm({
               )} />
             )}
 
-            <FormField control={control} name="notes" render={({ field }) => (<FormItem><FormLabel>{t('common.notes')}</FormLabel><FormControl><Textarea placeholder={t('devices.notes_placeholder')} {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField
+              control={control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('common.notes')}</FormLabel>
+                  <FormControl>
+                    <RichTextEditor 
+                      value={field.value || ''} 
+                      onChange={field.onChange} 
+                      placeholder={t('devices.notes_placeholder')} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button type="submit">{t('common.save_changes')}</Button>

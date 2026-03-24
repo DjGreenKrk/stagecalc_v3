@@ -22,9 +22,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import type { Client } from '@/lib/definitions';
 import { useTranslation } from '@/context/language-context';
+import { RichTextEditor } from '../ui/rich-text-editor';
 
 const getFormSchema = (t: (key: string) => string) => z.object({
   id: z.string().optional(),
@@ -195,7 +195,11 @@ export function ClientForm({
                 <FormItem>
                   <FormLabel>{t('common.notes')}</FormLabel>
                   <FormControl>
-                    <Textarea placeholder={t('clients.notes_placeholder')} {...field} />
+                    <RichTextEditor 
+                      value={field.value || ''} 
+                      onChange={field.onChange} 
+                      placeholder={t('clients.notes_placeholder')} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

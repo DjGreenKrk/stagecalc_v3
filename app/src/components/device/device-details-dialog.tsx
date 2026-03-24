@@ -16,6 +16,7 @@ import { connectorTypeConfig } from '@/lib/definitions';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../ui/table';
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import DOMPurify from 'dompurify';
 
 
 type DeviceDetailsDialogProps = {
@@ -390,8 +391,14 @@ export function DeviceDetailsDialog({
           
           {device.notes && (
             <div>
-              <p className="text-sm text-muted-foreground">{t('common.notes')}</p>
-              <p className="text-sm bg-muted/50 p-2 rounded-md">{device.notes}</p>
+              <p className="text-sm text-muted-foreground mb-1">{t('common.notes')}</p>
+              <div 
+                className="text-sm bg-muted/50 p-3 rounded-md overflow-x-auto min-h-[60px] 
+                           [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 
+                           [&_a]:text-primary [&_a]:underline [&_strong]:font-bold 
+                           [&_u]:underline"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(device.notes || '') }} 
+              />
             </div>
           )}
         </div>

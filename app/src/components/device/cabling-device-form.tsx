@@ -21,7 +21,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import type { Device, DeviceCategory, DistributionOutput } from '@/lib/definitions';
 import { useTranslation } from '@/context/language-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -30,6 +29,7 @@ import { Switch } from '../ui/switch';
 import { ConnectorTypes } from '@/lib/definitions';
 import { ChevronsUpDown, PlusCircle, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { RichTextEditor } from '../ui/rich-text-editor';
 
 const distributionOutputSchema = z.object({
   type: z.string().min(1),
@@ -242,7 +242,7 @@ export function CablingDeviceForm({
             </div>
 
             {category.subcategories && category.subcategories.length > 0 && (
-              <FormField control={control} name="subcategory" render={({ field }) => (<FormItem><FormLabel>Podkategoria</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz podkategorię..." /></SelectTrigger></FormControl><SelectContent>{category.subcategories?.map(sub => (<SelectItem key={sub.key} value={sub.key}>{t(`devices.subcategories.${sub.key}`, sub.label)}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+              <FormField control={control} name="subcategory" render={({ field }) => (<FormItem><FormLabel>Podkategoria</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Wybierz podkategorę..." /></SelectTrigger></FormControl><SelectContent>{category.subcategories?.map(sub => (<SelectItem key={sub.key} value={sub.key}>{t(`devices.subcategories.${sub.key}`, sub.label)}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             )}
             
             <div className="grid grid-cols-2 gap-4">
@@ -268,7 +268,23 @@ export function CablingDeviceForm({
             
             <Separator className="my-2"/>
 
-            <FormField control={control} name="notes" render={({ field }) => (<FormItem><FormLabel>{t('common.notes')}</FormLabel><FormControl><Textarea placeholder={t('devices.notes_placeholder')} {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField
+              control={control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('common.notes')}</FormLabel>
+                  <FormControl>
+                    <RichTextEditor 
+                      value={field.value || ''} 
+                      onChange={field.onChange} 
+                      placeholder={t('devices.notes_placeholder')} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button type="submit">{t('common.save_changes')}</Button>

@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '../ui/textarea';
+import { RichTextEditor } from '../ui/rich-text-editor';
 import { SummaryCard } from '../event/summary-card';
 import { useTranslation } from '@/context/language-context';
 import { generateId } from '@/lib/utils';
@@ -350,7 +350,23 @@ export function LocationForm({
                       <FormField control={control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('locations.table.name')}</FormLabel><FormControl><Input placeholder={t('locations.name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                       <FormField control={control} name="address" render={({ field }) => (<FormItem><FormLabel>{t('locations.table.address')}</FormLabel><FormControl><Input placeholder={t('locations.address_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                       <FormField control={control} name="capacity" render={({ field }) => (<FormItem><FormLabel>{t('locations.capacity_people')}</FormLabel><FormControl><Input type="number" placeholder="1000" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={control} name="notes" render={({ field }) => (<FormItem className="flex flex-col flex-1"><FormLabel>{t('common.notes')}</FormLabel><FormControl><Textarea placeholder={t('locations.notes_placeholder')} {...field} className="h-full" /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField
+                        control={control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col flex-1">
+                            <FormLabel>{t('common.notes')}</FormLabel>
+                            <FormControl>
+                              <RichTextEditor 
+                                value={field.value || ''} 
+                                onChange={field.onChange} 
+                                placeholder={t('locations.notes_placeholder')} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                     <div className="space-y-4">
                       <Tabs defaultValue="power">

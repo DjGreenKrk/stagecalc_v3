@@ -16,6 +16,7 @@ import { useTranslation } from '@/context/language-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { useMemo } from 'react';
 import { SummaryCard } from '../event/summary-card';
+import DOMPurify from 'dompurify';
 
 type LocationDetailsDialogProps = {
   open: boolean;
@@ -23,7 +24,7 @@ type LocationDetailsDialogProps = {
   location?: Location;
 };
 
-const DetailItem = ({ icon: Icon, label, value, isLink, linkPrefix }: { icon: React.ElementType, label?: string; value: string | number | undefined | null, isLink?: boolean, linkPrefix?: string }) => {
+const DetailItem = ({ icon: Icon, label, value, isLink, linkPrefix, isHtml }: { icon: React.ElementType, label?: string; value: string | number | undefined | null, isLink?: boolean, linkPrefix?: string, isHtml?: boolean }) => {
   if (!value) return null;
 
   const getHref = () => {
@@ -35,17 +36,25 @@ const DetailItem = ({ icon: Icon, label, value, isLink, linkPrefix }: { icon: Re
   return (
     <div className="flex items-start gap-3">
       <Icon className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-      <div className="flex flex-col">
+      <div className="flex flex-col flex-1 min-w-0">
         {label && <p className="text-sm font-medium text-muted-foreground">{label}</p>}
         {isLink && typeof value === 'string' ? (
           <a
             href={getHref()}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-foreground hover:underline"
+            className="text-foreground hover:underline break-words"
           >
             {value}
           </a>
+        ) : isHtml && typeof value === 'string' ? (
+          <div 
+            className="text-foreground text-sm space-y-1 
+                       [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 
+                       [&_a]:text-primary [&_a]:underline [&_strong]:font-bold 
+                       [&_u]:underline"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(value) }} 
+          />
         ) : (
           <p className="text-foreground">{value}</p>
         )}
@@ -105,7 +114,7 @@ export function LocationDetailsDialog({
           <div className="grid gap-4">
             <DetailItem icon={MapPin} label={t('locations.table.address')} value={location.address} isLink={true} linkPrefix='maps' />
             {!!location.capacity && <DetailItem icon={Users} label={t('locations.capacity')} value={`${location.capacity} ${t('locations.people')}`} />}
-            {location.notes && <DetailItem icon={FileText} label={t('common.notes')} value={location.notes} />}
+            {location.notes && <DetailItem icon={FileText} label={t('common.notes')} value={location.notes} isHtml={true} />}
           </div>
 
           {totalPowerCapacityNumber > 0 && (
